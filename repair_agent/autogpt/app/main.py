@@ -4,6 +4,7 @@ import logging
 import math
 import signal
 import sys
+import time
 from pathlib import Path
 from types import FrameType
 from typing import Optional
@@ -26,6 +27,7 @@ from autogpt.app.utils import (
 )
 from autogpt.commands import COMMAND_CATEGORIES
 from autogpt.config import AIConfig, Config, ConfigBuilder, check_openai_api_key
+from autogpt.experiment_metrics import record_bug_run_metrics
 from autogpt.llm.api_manager import ApiManager
 from autogpt.logs import logger
 from autogpt.memory.vector import get_memory
@@ -180,7 +182,11 @@ def run_auto_gpt(
         experiment_file = experiment_file
     )
 
-    run_interaction_loop(agent)
+    run_started_at = time.monotonic()
+    try:
+        run_interaction_loop(agent)
+    finally:
+        record_bug_run_metrics(agent, time.monotonic() - run_started_at)
 
 
 def _get_cycle_budget(continuous_mode: bool, continuous_limit: int) -> int | None:

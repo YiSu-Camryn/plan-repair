@@ -6,6 +6,7 @@ import openai
 from openai import Model
 
 from autogpt.llm.base import CompletionModelInfo
+from autogpt.llm.third_party_models import resolve_pricing_model
 from autogpt.logs import logger
 from autogpt.singleton import Singleton
 
@@ -38,9 +39,10 @@ class ApiManager(metaclass=Singleton):
         from autogpt.llm.providers.openai import ALL_MODELS
 
         model = model[:-3] if model.endswith("-v2") else model
+        model = resolve_pricing_model(model)
 
         if model not in ALL_MODELS:
-            logger.warn(f"Unknown model '{model}' for cost tracking, skipping.")
+            logger.warn(f"Unknown model '{model}' for cost tracking, skipping cost.")
             self.total_prompt_tokens += prompt_tokens
             self.total_completion_tokens += completion_tokens
             return

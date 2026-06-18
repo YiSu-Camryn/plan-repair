@@ -8,6 +8,16 @@ Five spec injection conditions (``hyperparams_ablation.json`` → ``spec_level``
 - ``full``  (A3): E34-style — all diagnostic fields (~600 tokens)
 - ``e39``   (A4): full + fix_direction, confidence, ACTION tweaks
 
+Optional verifier ablation (``use_spec_verifier``):
+
+- ``true`` (default): run ``verify_spec`` and regenerate on REJECT
+- ``false``: skip spec verification (same spec JSON from first LLM call)
+
+Optional self-clarification ablation (``use_self_clarification``):
+
+- ``true`` (default): when ``confidence`` is LOW, answer ``clarifying_question`` via LLM
+- ``false``: skip Phase 4c; no ``developer_clarification`` field added
+
 Usage (instead of ``./run.sh``)::
 
     ./run_ablation.sh --ai-settings ai_settings.yaml \\
@@ -60,6 +70,8 @@ SPEC_LEVEL_ALIASES = {
 }
 
 DEFAULT_SPEC_LEVEL = SPEC_LEVEL_E39
+DEFAULT_USE_SPEC_VERIFIER = True
+DEFAULT_USE_SELF_CLARIFICATION = True
 
 SPEC_HEADER = "## Behavioral Specification of Buggy Method\n\n"
 
@@ -97,6 +109,47 @@ def resolve_spec_level(hyperparams: Optional[dict]) -> str:
         )
     )
     return DEFAULT_SPEC_LEVEL
+
+
+def _resolve_bool_hyperparam(
+    hyperparams: Optional[dict],
+    key: str,
+    default: bool,
+) -> bool:
+    """Read a boolean flag from ablation hyperparams."""
+    if not hyperparams or key not in hyperparams:
+        return default
+
+    value = hyperparams[key]
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.lower().strip()
+        if normalized in ("false", "0", "no", "off"):
+            return False
+        if normalized in ("true", "1", "yes", "on"):
+            return True
+    if isinstance(value, (int, float)):
+        return bool(value)
+
+    logger.warning(
+        "ABLATION: Unknown {} {!r}, defaulting to {!r}".format(key, value, default)
+    )
+    return default
+
+
+def resolve_use_spec_verifier(hyperparams: Optional[dict]) -> bool:
+    """Read ``use_spec_verifier`` from ablation hyperparams (default True)."""
+    return _resolve_bool_hyperparam(
+        hyperparams, "use_spec_verifier", DEFAULT_USE_SPEC_VERIFIER
+    )
+
+
+def resolve_use_self_clarification(hyperparams: Optional[dict]) -> bool:
+    """Read ``use_self_clarification`` from ablation hyperparams (default True)."""
+    return _resolve_bool_hyperparam(
+        hyperparams, "use_self_clarification", DEFAULT_USE_SELF_CLARIFICATION
+    )
 
 
 def load_ablation_hyperparams(experiment_file: str) -> dict:
@@ -194,6 +247,8 @@ def format_spec_for_prompt_by_level(
 def _make_patched_generate_spec(
     original: Callable[..., dict],
     level: str,
+    use_spec_verifier: bool,
+    use_self_clarification: bool,
 ) -> Callable[..., dict]:
     if level == SPEC_LEVEL_NONE:
 
@@ -209,6 +264,8 @@ def _make_patched_generate_spec(
         return skip_generate_spec
 
     def ablation_generate_spec(*args, **kwargs) -> dict:
+        kwargs["use_spec_verifier"] = use_spec_verifier
+        kwargs["use_self_clarification"] = use_self_clarification
         result = original(*args, **kwargs)
         if not result.get("success"):
             return result
@@ -239,12 +296,18 @@ def _make_patched_generate_spec(
 
 
 @contextmanager
-def patch_generate_spec_for_level(level: str) -> Iterator[None]:
+def patch_generate_spec_for_level(
+    level: str,
+    use_spec_verifier: bool = DEFAULT_USE_SPEC_VERIFIER,
+    use_self_clarification: bool = DEFAULT_USE_SELF_CLARIFICATION,
+) -> Iterator[None]:
     """Temporarily replace ``generate_spec`` while ``BaseAgent.__init__`` runs."""
     import autogpt.commands.spec_generator as spec_generator
 
     original = spec_generator.generate_spec
-    spec_generator.generate_spec = _make_patched_generate_spec(original, level)
+    spec_generator.generate_spec = _make_patched_generate_spec(
+        original, level, use_spec_verifier, use_self_clarification
+    )
     try:
         yield
     finally:
@@ -266,10 +329,19 @@ class AblationAgent(Agent):
     ):
         hyperparams = load_ablation_hyperparams(experiment_file)
         self.spec_level = resolve_spec_level(hyperparams)
+        self.use_spec_verifier = resolve_use_spec_verifier(hyperparams)
+        self.use_self_clarification = resolve_use_self_clarification(hyperparams)
 
-        logger.info("ABLATION: Using AblationAgent with spec_level={}".format(self.spec_level))
+        logger.info(
+            "ABLATION: Using AblationAgent with spec_level={}, "
+            "use_spec_verifier={}, use_self_clarification={}".format(
+                self.spec_level, self.use_spec_verifier, self.use_self_clarification
+            )
+        )
 
-        with patch_generate_spec_for_level(self.spec_level):
+        with patch_generate_spec_for_level(
+            self.spec_level, self.use_spec_verifier, self.use_self_clarification
+        ):
             super().__init__(
                 ai_config=ai_config,
                 command_registry=command_registry,
@@ -282,6 +354,10 @@ class AblationAgent(Agent):
 
         if "spec_section" in self.prompt_dictionary:
             self.prompt_dictionary["spec_ablation_level"] = self.spec_level
+            self.prompt_dictionary["spec_ablation_use_verifier"] = self.use_spec_verifier
+            self.prompt_dictionary["spec_ablation_use_self_clarification"] = (
+                self.use_self_clarification
+            )
 
 
 def run_ablation_auto_gpt(*args, **kwargs):

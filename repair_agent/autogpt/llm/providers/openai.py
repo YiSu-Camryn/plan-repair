@@ -133,17 +133,22 @@ OPEN_AI_MODELS: dict[str, ChatModelInfo | EmbeddingModelInfo | TextModelInfo] = 
     **OPEN_AI_EMBEDDING_MODELS,
 }
 
-# Combined model registry: includes OpenAI + Anthropic models
+# Combined model registry: includes OpenAI + Anthropic + third-party models
 from autogpt.llm.providers.anthropic import ANTHROPIC_CHAT_MODELS
+from autogpt.llm.third_party_models import build_third_party_chat_models
+
+THIRD_PARTY_CHAT_MODELS = build_third_party_chat_models()
 
 ALL_CHAT_MODELS: dict[str, ChatModelInfo] = {
     **OPEN_AI_CHAT_MODELS,
     **ANTHROPIC_CHAT_MODELS,
+    **THIRD_PARTY_CHAT_MODELS,
 }
 
 ALL_MODELS: dict[str, ChatModelInfo | EmbeddingModelInfo | TextModelInfo] = {
     **OPEN_AI_MODELS,
     **ANTHROPIC_CHAT_MODELS,
+    **THIRD_PARTY_CHAT_MODELS,
 }
 
 

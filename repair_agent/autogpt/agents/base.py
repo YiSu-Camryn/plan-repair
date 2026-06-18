@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 from autogpt.llm.base import ChatModelResponse, ChatSequence, Message
 from autogpt.llm.providers.openai import ALL_CHAT_MODELS, get_openai_command_specs
+from autogpt.llm.third_party_models import resolve_pricing_model
 from autogpt.llm.utils import count_message_tokens, create_chat_completion
 from autogpt.logs import logger
 from autogpt.memory.message_history import MessageHistory
@@ -129,6 +130,9 @@ class BaseAgent(metaclass=ABCMeta):
         """
 
         llm_name = self.config.smart_llm if self.big_brain else self.config.fast_llm
+        pricing_key = resolve_pricing_model(llm_name)
+        if pricing_key in ALL_CHAT_MODELS and llm_name not in ALL_CHAT_MODELS:
+            ALL_CHAT_MODELS[llm_name] = ALL_CHAT_MODELS[pricing_key]
         if llm_name not in ALL_CHAT_MODELS:
             from autogpt.llm.base import ChatModelInfo
             ALL_CHAT_MODELS[llm_name] = ChatModelInfo(
@@ -1009,6 +1013,7 @@ please use the indicated format and produce a list, like this:
     def construct_base_prompt(
         self,
         thought_process_id: ThoughtProcessID,
+        cycle_instruction: str = "",
         prepend_messages: list[Message] = [],
         append_messages: list[Message] = [],
         reserve_tokens: int = 0,
@@ -1040,8 +1045,8 @@ please use the indicated format and produce a list, like this:
         self.construct_extracted_methods()
         self.save_context()
 
-        with open("cycle_instruction_text.txt") as cit:
-            cycle_instruction = cit.read()
+        if not cycle_instruction:
+            cycle_instruction = self.default_cycle_instruction
 
         if self.hyperparams["budget_control"]["name"] == "NO-TRACK":
             pass
@@ -1126,6 +1131,7 @@ please use the indicated format and produce a list, like this:
 
         prompt = self.construct_base_prompt(
             thought_process_id,
+            cycle_instruction=cycle_instruction,
             append_messages=append_messages,
             reserve_tokens=cycle_instruction_tlength,
         )

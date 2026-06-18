@@ -8,5 +8,7 @@
     "repetition_handling": "RESTRICT",
     "external_fix_strategy": 0,
     "commands_limit": 40,
-    "spec_level": "e39"
+    "spec_level": "e39",
+    "use_spec_verifier": true,
+    "use_self_clarification": true
 }

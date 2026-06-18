@@ -35,6 +35,13 @@ ANTHROPIC_CHAT_MODELS = {
             max_tokens=200000,
             supports_functions=False,
         ),
+        ChatModelInfo(
+            name="claude-opus-4-8",
+            prompt_token_cost=0.005,   # $5/M — Anthropic official (May 2026)
+            completion_token_cost=0.025,  # $25/M
+            max_tokens=1000000,
+            supports_functions=False,
+        ),
     ]
 }
 
@@ -43,6 +50,7 @@ anthropic_model_mapping = {
     "claude-sonnet": "claude-sonnet-4-20250514",
     "claude-haiku": "claude-haiku-4-20250414",
     "claude-opus": "claude-opus-4-20250514",
+    "claude-opus-4.8": "claude-opus-4-8",
 }
 
 for alias, target in anthropic_model_mapping.items():

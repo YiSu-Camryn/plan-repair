@@ -81,7 +81,7 @@ import click
     "--experiment-file",
     type=str,
     required=True,
-    help="Ablation hyperparams file (e.g. hyperparams_ablation.json with spec_level).",
+    help="Ablation hyperparams file (spec_level, use_spec_verifier, use_self_clarification).",
 )
 @click.option(
     "--model",

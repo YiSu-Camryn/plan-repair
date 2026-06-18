@@ -864,10 +864,14 @@ def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
 # ─────────────────────────────────────────────────────────────────────
 
 def generate_spec(project_name, bug_index, localization_info, test_results,
-                  model="gpt-4o-mini", workspace="auto_gpt_workspace"):
+                  model="gpt-4o-mini", workspace="auto_gpt_workspace",
+                  use_spec_verifier=True, use_self_clarification=True):
     """Generate a behavioral specification for the given bug.
 
     Called from base.py __init__ at agent startup.
+
+    ``use_spec_verifier``: when False, skip Phase 4b (``verify_spec`` and retry).
+    ``use_self_clarification``: when False, skip Phase 4c (LOW-confidence Q&A).
     """
     logger.info("SPEC-GEN: Generating spec for {}-{}".format(project_name, bug_index))
 
@@ -1000,57 +1004,71 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
                            {"_parse_failed": True, "_raw_preview": raw_response[:500]})
 
         # ── Phase 4b: Verify spec ──
-        from autogpt.commands.spec_verifier import verify_spec
+        if use_spec_verifier:
+            from autogpt.commands.spec_verifier import verify_spec
 
-        verify_context = method_body if method_body else source_info.get("window", "")
-        verify_result = verify_spec(
-            spec_json=spec_json,
-            source_code_context=verify_context,
-            buggy_lines_info=buggy_lines_info,
-            test_info=effective_test_failure,
-            model=model,
-        )
-        _save_spec_log(project_name, bug_index, "verify_result_json", verify_result)
-        logger.info("SPEC-GEN: Verification verdict: {}".format(verify_result["verdict"]))
+            verify_context = method_body if method_body else source_info.get("window", "")
+            verify_result = verify_spec(
+                spec_json=spec_json,
+                source_code_context=verify_context,
+                buggy_lines_info=buggy_lines_info,
+                test_info=effective_test_failure,
+                model=model,
+            )
+            _save_spec_log(project_name, bug_index, "verify_result_json", verify_result)
+            logger.info("SPEC-GEN: Verification verdict: {}".format(verify_result["verdict"]))
 
-        if verify_result["verdict"] == "REJECT" and verify_result.get("feedback_prompt"):
-            logger.info("SPEC-GEN: Spec REJECTED, regenerating with feedback...")
+            if verify_result["verdict"] == "REJECT" and verify_result.get("feedback_prompt"):
+                logger.info("SPEC-GEN: Spec REJECTED, regenerating with feedback...")
 
-            # Rebuild prompt with verifier feedback appended
-            retry_prompt = user_prompt + "\n" + verify_result["feedback_prompt"]
-            _save_spec_log(project_name, bug_index, "retry_prompt", retry_prompt)
+                # Rebuild prompt with verifier feedback appended
+                retry_prompt = user_prompt + "\n" + verify_result["feedback_prompt"]
+                _save_spec_log(project_name, bug_index, "retry_prompt", retry_prompt)
 
-            retry_messages = [
-                SystemMessage(content=SPEC_SYSTEM_PROMPT),
-                HumanMessage(content=retry_prompt),
-            ]
-            retry_response = chat.invoke(retry_messages)
-            raw_response_v2 = retry_response.content
+                retry_messages = [
+                    SystemMessage(content=SPEC_SYSTEM_PROMPT),
+                    HumanMessage(content=retry_prompt),
+                ]
+                retry_response = chat.invoke(retry_messages)
+                raw_response_v2 = retry_response.content
 
-            logger.info("SPEC-GEN: Retry LLM returned {} chars".format(len(raw_response_v2)))
-            _save_spec_log(project_name, bug_index, "retry_raw_response", raw_response_v2)
+                logger.info("SPEC-GEN: Retry LLM returned {} chars".format(len(raw_response_v2)))
+                _save_spec_log(project_name, bug_index, "retry_raw_response", raw_response_v2)
 
-            # Parse the retry response
-            spec_json_v2 = None
-            try:
-                json_match_v2 = re.search(r"```(?:json)?\s*(.*?)```", raw_response_v2, re.DOTALL)
-                if json_match_v2:
-                    spec_json_v2 = json.loads(json_match_v2.group(1).strip())
+                # Parse the retry response
+                spec_json_v2 = None
+                try:
+                    json_match_v2 = re.search(r"```(?:json)?\s*(.*?)```", raw_response_v2, re.DOTALL)
+                    if json_match_v2:
+                        spec_json_v2 = json.loads(json_match_v2.group(1).strip())
+                    else:
+                        spec_json_v2 = json.loads(raw_response_v2.strip())
+                except json.JSONDecodeError:
+                    logger.info("SPEC-GEN: Retry JSON parse failed, keeping original spec")
+
+                if spec_json_v2:
+                    _save_spec_log(project_name, bug_index, "retry_parsed_json", spec_json_v2)
+                    spec_json = spec_json_v2
+                    raw_response = raw_response_v2
+                    logger.info("SPEC-GEN: Using revised spec after verification feedback")
                 else:
-                    spec_json_v2 = json.loads(raw_response_v2.strip())
-            except json.JSONDecodeError:
-                logger.info("SPEC-GEN: Retry JSON parse failed, keeping original spec")
-
-            if spec_json_v2:
-                _save_spec_log(project_name, bug_index, "retry_parsed_json", spec_json_v2)
-                spec_json = spec_json_v2
-                raw_response = raw_response_v2
-                logger.info("SPEC-GEN: Using revised spec after verification feedback")
-            else:
-                logger.info("SPEC-GEN: Retry parse failed, using original spec")
+                    logger.info("SPEC-GEN: Retry parse failed, using original spec")
+        else:
+            logger.info("SPEC-GEN: Spec verifier disabled — skipping verification")
+            _save_spec_log(
+                project_name,
+                bug_index,
+                "verify_result_json",
+                {"verdict": "SKIPPED", "reason": "use_spec_verifier=false"},
+            )
 
         # ── Phase 4c: Self-clarification for LOW confidence specs ──
-        if spec_json and spec_json.get("confidence") == "LOW" and spec_json.get("clarifying_question"):
+        if (
+            use_self_clarification
+            and spec_json
+            and spec_json.get("confidence") == "LOW"
+            and spec_json.get("clarifying_question")
+        ):
             logger.info("SPEC-GEN: Low confidence — self-clarifying: {}".format(
                 spec_json["clarifying_question"]))
 
@@ -1068,6 +1086,19 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
                     spec_json["clarifying_question"], answer)
             else:
                 logger.info("SPEC-GEN: Self-clarification returned UNKNOWN, skipping")
+        elif (
+            not use_self_clarification
+            and spec_json
+            and spec_json.get("confidence") == "LOW"
+            and spec_json.get("clarifying_question")
+        ):
+            logger.info("SPEC-GEN: Self-clarification disabled — skipping")
+            _save_spec_log(
+                project_name,
+                bug_index,
+                "clarification",
+                {"skipped": True, "reason": "use_self_clarification=false"},
+            )
 
         # ── Phase 5: Format for prompt injection ──
         prompt_section = format_spec_for_prompt(spec_json, raw_response)
