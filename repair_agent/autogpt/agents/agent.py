@@ -14,7 +14,11 @@ if TYPE_CHECKING:
     from autogpt.memory.vector import VectorMemory
     from autogpt.models.command_registry import CommandRegistry
 
-from autogpt.json_utils.utilities import extract_dict_from_response, validate_dict
+from autogpt.json_utils.utilities import (
+    extract_dict_from_response,
+    normalize_llm_response_dict,
+    validate_dict,
+)
 from autogpt.llm.api_manager import ApiManager
 from autogpt.llm.base import Message
 from autogpt.llm.utils import count_string_tokens
@@ -217,7 +221,9 @@ class Agent(BaseAgent):
         exps = self.exps
         with open(os.path.join("experimental_setups", exps[-1], "responses", "model_responses_{}_{}".format(self.project_name, self.bug_index)), "a+") as patf:
             patf.write(llm_response.content)
-        assistant_reply_dict = extract_dict_from_response(llm_response.content)
+        assistant_reply_dict = normalize_llm_response_dict(
+            extract_dict_from_response(llm_response.content)
+        )
 
         if not isinstance(assistant_reply_dict, dict):
             raise SyntaxError(
@@ -227,6 +233,9 @@ class Agent(BaseAgent):
         if "command" not in assistant_reply_dict:
             assistant_reply_dict["command"] = {"name": "missing_command", "args":{}}
         command_dict = assistant_reply_dict["command"]
+        if not isinstance(command_dict, dict):
+            assistant_reply_dict = normalize_llm_response_dict(assistant_reply_dict)
+            command_dict = assistant_reply_dict["command"]
         if not isinstance(command_dict, dict):
             assistant_reply_dict["command"] = {"name": "unknown_command", "args":{}}
             command_dict = assistant_reply_dict["command"]
@@ -253,8 +262,11 @@ class Agent(BaseAgent):
                             break
                 
                 if "project_name" in new_command_dict["args"]:
-                    if "_" in new_command_dict["args"]["project_name"]:
-                        name_only = new_command_dict["args"]["project_name"].split("_")[0]
+                    pn = str(new_command_dict["args"]["project_name"])
+                    if "." in pn:
+                        new_command_dict["args"]["project_name"] = pn.split(".")[-1].capitalize()
+                    elif "_" in pn:
+                        name_only = pn.split("_")[0]
                         new_command_dict["args"]["project_name"] = name_only
                 if new_command_dict["name"] in [
                     "write_fix", 

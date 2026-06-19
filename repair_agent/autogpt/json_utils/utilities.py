@@ -61,6 +61,65 @@ def extract_dict_from_response(response_content: str) -> dict[str, Any]:
     return {}
 
 
+def normalize_llm_response_dict(raw: dict[str, Any]) -> dict[str, Any]:
+    """Coerce common alternate LLM JSON shapes into the RepairAgent schema.
+
+    Some models return {"command": "read_range", "params": {...}} instead of
+    {"thoughts": "...", "command": {"name": "read_range", "args": {...}}}.
+    """
+    if not isinstance(raw, dict) or not raw:
+        return {"thoughts": "Proceeding with the next repair step.", "command": {"name": "missing_command", "args": {}}}
+
+    data = dict(raw)
+
+    nested = data.get("next_command")
+    if isinstance(nested, dict):
+        for key, value in nested.items():
+            if key not in data or data[key] in (None, "", {}):
+                data[key] = value
+
+    extra_args: dict[str, Any] = {}
+    for key in ("params", "arguments"):
+        value = data.pop(key, None)
+        if isinstance(value, dict):
+            extra_args.update(value)
+
+    thoughts = data.get("thoughts") or data.get("reasoning") or data.get("thought")
+    if not thoughts:
+        thoughts = "Proceeding with the next repair step."
+
+    cmd = data.get("command")
+    if isinstance(cmd, str):
+        command = {"name": cmd, "args": dict(extra_args)}
+    elif isinstance(cmd, dict):
+        name = cmd.get("name") or cmd.get("command")
+        args = cmd.get("args")
+        if not isinstance(args, dict):
+            args = {}
+        for alt_key in ("params", "arguments"):
+            alt = cmd.get(alt_key)
+            if isinstance(alt, dict):
+                args = {**alt, **args}
+        args = {**extra_args, **args}
+        if isinstance(name, str) and name:
+            command = {"name": name, "args": args}
+        else:
+            command = {"name": "missing_command", "args": args}
+    else:
+        command = {"name": "missing_command", "args": dict(extra_args)}
+
+    if "args" not in command or not isinstance(command["args"], dict):
+        command["args"] = {}
+
+    normalized = {"thoughts": str(thoughts), "command": command}
+    if normalized != {"thoughts": data.get("thoughts"), "command": data.get("command")}:
+        logger.info(
+            "Normalized alternate LLM response format to command.name/args "
+            "(command={})".format(command.get("name"))
+        )
+    return normalized
+
+
 def llm_response_schema(
     config: Config, schema_name: str = LLM_DEFAULT_RESPONSE_FORMAT
 ) -> dict[str, Any]:

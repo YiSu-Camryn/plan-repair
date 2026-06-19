@@ -285,10 +285,20 @@ def run_interaction_loop(
         # Get user input #
         ##################
         if cycles_remaining == 1:  # Last cycle
-            user_feedback, user_input, new_cycles_remaining = get_user_feedback(
-                config,
-                ai_config,
-            )
+            new_cycles_remaining = None
+            if config.continuous_mode:
+                user_feedback = UserFeedback.AUTHORIZE
+                user_input = ""
+                logger.typewriter_log(
+                    "CONTINUOUS MODE: ",
+                    Fore.MAGENTA,
+                    f"Auto-authorising next {cycle_budget} cycles.",
+                )
+            else:
+                user_feedback, user_input, new_cycles_remaining = get_user_feedback(
+                    config,
+                    ai_config,
+                )
 
             if user_feedback == UserFeedback.AUTHORIZE:
                 if new_cycles_remaining is not None:

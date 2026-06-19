@@ -18,7 +18,7 @@ from autogpt.llm.utils import count_message_tokens, create_chat_completion
 from autogpt.logs import logger
 from autogpt.memory.message_history import MessageHistory
 from autogpt.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
-from autogpt.json_utils.utilities import extract_dict_from_response
+from autogpt.json_utils.utilities import extract_dict_from_response, normalize_llm_response_dict
 from autogpt.commands.defects4j_static import get_info, run_tests, query_for_fix, query_for_commands, extract_command, execute_command, create_fix_template
 
 CommandName = str
@@ -962,8 +962,8 @@ please use the indicated format and produce a list, like this:
         )
         
         try:
-            response_dict = extract_dict_from_response(
-                raw_response.content
+            response_dict = normalize_llm_response_dict(
+                extract_dict_from_response(raw_response.content)
             )
             repetition = self.detect_command_repetition(response_dict)
             if repetition:
