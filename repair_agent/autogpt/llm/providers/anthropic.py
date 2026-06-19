@@ -65,6 +65,28 @@ def is_anthropic_model(model: str) -> bool:
     return model.startswith("claude-")
 
 
+def is_openai_compat_routing_enabled(config=None) -> bool:
+    """True when Claude should use the OpenAI-compatible API (proxy/Bedrock gateway).
+
+    Matches DeepSeek-style routing: set OPENAI_API_BASE_URL (or Config.openai_api_base)
+    and pass the provider's model id via --model.
+    """
+    import os
+
+    if os.getenv("USE_OPENAI_API_FOR_CLAUDE", "").lower() in ("1", "true", "yes"):
+        return True
+    if config is not None and getattr(config, "openai_api_base", None):
+        return True
+    if os.getenv("OPENAI_API_BASE_URL") or os.getenv("OPENAI_API_BASE"):
+        return True
+    return False
+
+
+def use_anthropic_native_api(model: str, config=None) -> bool:
+    """Use Anthropic SDK only for claude-* when no OpenAI-compatible proxy is configured."""
+    return is_anthropic_model(model) and not is_openai_compat_routing_enabled(config)
+
+
 def retry_api(
     max_retries: int = 10,
     backoff_base: float = 2.0,

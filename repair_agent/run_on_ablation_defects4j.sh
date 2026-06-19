@@ -15,6 +15,7 @@ python3 construct_commands_descriptions.py
 input="$1"
 experiment_file="$2"
 model="${3:-gpt-4o-mini}"
+commands_limit=$(python3 -c "from autogpt.config.hyperparams_loader import load_hyperparams; print(load_hyperparams('$experiment_file')['commands_limit'])")
 
 dos2unix "$input" 2>/dev/null || true
 
@@ -24,5 +25,5 @@ do
     echo ${tuple[0]}, ${tuple[1]}
     python3 prepare_ai_settings.py "${tuple[0]}" "${tuple[1]}"
     python3 checkout_py.py "${tuple[0]}" "${tuple[1]}"
-    ./run_ablation.sh --ai-settings ai_settings.yaml --model "$model" -c -l 40 -m json_file --experiment-file "$experiment_file"
+    ./run_ablation.sh --ai-settings ai_settings.yaml --model "$model" -c -l "$commands_limit" -m json_file --experiment-file "$experiment_file"
 done < "$input"

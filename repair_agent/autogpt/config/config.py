@@ -330,6 +330,8 @@ class ConfigBuilder(Configurable[Config]):
 
         elif os.getenv("OPENAI_API_BASE_URL"):
             config_dict["openai_api_base"] = os.getenv("OPENAI_API_BASE_URL")
+        elif os.getenv("OPENAI_API_BASE"):
+            config_dict["openai_api_base"] = os.getenv("OPENAI_API_BASE")
 
         openai_organization = os.getenv("OPENAI_ORGANIZATION")
         if openai_organization is not None:
@@ -380,15 +382,14 @@ class ConfigBuilder(Configurable[Config]):
 
 def check_openai_api_key(config: Config) -> None:
     """Check if an API key (OpenAI or Anthropic) is set."""
-    from autogpt.llm.providers.anthropic import is_anthropic_model
+    from autogpt.llm.providers.anthropic import use_anthropic_native_api
 
-    # If using an Anthropic model, check for Anthropic key
-    using_anthropic = any(
-        is_anthropic_model(m)
+    using_anthropic_native = any(
+        use_anthropic_native_api(m, config)
         for m in [config.fast_llm, config.smart_llm, config.static_llm]
     )
 
-    if using_anthropic:
+    if using_anthropic_native:
         if not config.anthropic_api_key and not os.getenv("ANTHROPIC_API_KEY"):
             print(
                 Fore.RED

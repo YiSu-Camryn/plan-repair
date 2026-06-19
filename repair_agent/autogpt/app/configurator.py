@@ -10,7 +10,7 @@ from autogpt import utils
 from autogpt.config import Config
 from autogpt.config.config import GPT_3_MODEL, GPT_4_MODEL
 from autogpt.llm.api_manager import ApiManager
-from autogpt.llm.providers.anthropic import is_anthropic_model
+from autogpt.llm.providers.anthropic import is_anthropic_model, use_anthropic_native_api
 from autogpt.llm.providers.openai import ALL_CHAT_MODELS
 from autogpt.logs import logger
 from autogpt.memory.vector import get_supported_memory_backends
@@ -88,7 +88,7 @@ def create_config(
         config.fast_llm = model
         config.smart_llm = model
         config.static_llm = model
-        provider = "Anthropic" if is_anthropic_model(model) else "OpenAI"
+        provider = "Anthropic" if use_anthropic_native_api(model, config) else "OpenAI"
         logger.typewriter_log(f"Model override: Using {model} ({provider}) for fast_llm, smart_llm, and static_llm.", Fore.GREEN)
     elif gpt3only:
         logger.typewriter_log("GPT3.5 Only Mode: ", Fore.GREEN, "ENABLED")
@@ -181,7 +181,7 @@ def check_model(
 
     # Anthropic/Claude models are validated by the API at call time,
     # not by listing available models like OpenAI.
-    if is_anthropic_model(model_name):
+    if is_anthropic_model(model_name) and use_anthropic_native_api(model_name, config):
         if model_name in ALL_CHAT_MODELS:
             return model_name
         logger.typewriter_log(
@@ -191,6 +191,9 @@ def check_model(
             f"claude-sonnet-4-20250514.",
         )
         return "claude-sonnet-4-20250514"
+
+    if is_anthropic_model(model_name) and not use_anthropic_native_api(model_name, config):
+        return model_name
 
     openai_credentials = config.get_openai_credentials(model_name)
     api_manager = ApiManager()

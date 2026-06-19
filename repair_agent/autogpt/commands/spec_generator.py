@@ -682,9 +682,9 @@ def _answer_clarifying_question(question, test_code, test_failure, method_body, 
     )
 
     try:
-        from langchain.chat_models import ChatOpenAI
+        from autogpt.llm.chat_model import get_langchain_chat_model
         from langchain.schema.messages import HumanMessage
-        chat = ChatOpenAI(model=model)
+        chat = get_langchain_chat_model(model)
         response = chat.invoke([HumanMessage(content=prompt)])
         answer = response.content.strip()
         if "UNKNOWN" in answer.upper() and len(answer) < 20:
@@ -972,10 +972,10 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
         _save_spec_log(project_name, bug_index, "input_prompt", full_prompt_log)
 
         # ── Phase 3: Call LLM ──
-        from langchain.chat_models import ChatOpenAI
+        from autogpt.llm.chat_model import get_langchain_chat_model
         from langchain.schema.messages import HumanMessage, SystemMessage
 
-        chat = ChatOpenAI(model=model)
+        chat = get_langchain_chat_model(model)
         messages = [
             SystemMessage(content=SPEC_SYSTEM_PROMPT),
             HumanMessage(content=user_prompt),

@@ -25,6 +25,34 @@ CommandName = str
 CommandArgs = dict[str, str]
 AgentThoughts = dict[str, Any]
 
+# Commands that only gather context — looping on these burns budget without fixing.
+INFO_GATHERING_COMMANDS = frozenset({
+    "read_range",
+    "get_classes_and_methods",
+    "extract_method_code",
+    "get_info",
+    "run_tests",
+    "grep",
+    "search_files",
+    "search_code",
+    "list_files",
+    "read_file",
+    "analyze_code",
+    "get_method_body",
+    "find_similar_calls",
+    "ask_chatgpt",
+})
+
+FIX_ATTEMPT_COMMANDS = frozenset({
+    "write_fix",
+    "write_range",
+    "try_fixes",
+    "change_state",
+    "express_hypothesis",
+    "go_back_to_collect_more_info",
+    "discard_hypothesis",
+})
+
 class BaseAgent(metaclass=ABCMeta):
     """Base class for all Auto-GPT agents."""
 
@@ -212,8 +240,9 @@ class BaseAgent(metaclass=ABCMeta):
         self.buggy_lines = ""
         self.similar_calls = None
 
-        with open(experiment_file) as hper:
-            self.hyperparams = json.load(hper)
+        from autogpt.config.hyperparams_loader import load_hyperparams
+
+        self.hyperparams = load_hyperparams(experiment_file)
 
         self.extracted_methods = []
 
@@ -388,14 +417,91 @@ please use the indicated format and produce a list, like this:
         else:
             return False
         
+    def _command_fingerprint(self, command_dict: dict) -> str | None:
+        """Stable key for command name + arguments (used for repeat / loop detection)."""
+        try:
+            cmd = command_dict.get("command", command_dict)
+            if not isinstance(cmd, dict):
+                return None
+            name = cmd.get("name")
+            if not name:
+                return None
+            args = cmd.get("args", {})
+            if not isinstance(args, dict):
+                args = {}
+            normalized_args = {
+                str(k): "" if v is None else str(v)
+                for k, v in sorted(args.items())
+            }
+            return "{}|{}".format(name, json.dumps(normalized_args, sort_keys=True))
+        except Exception as e:
+            logger.debug(f"_command_fingerprint: failed: {e}")
+            return None
+
+    def _iter_executed_command_fingerprints(self) -> list[str]:
+        fingerprints: list[str] = []
+        for msg in self.history:
+            if msg.role != "assistant":
+                continue
+            try:
+                command_dict = extract_dict_from_response(msg.content)
+                if not self.validate_command_parsing(command_dict):
+                    continue
+                fp = self._command_fingerprint(command_dict)
+                if fp:
+                    fingerprints.append(fp)
+            except Exception:
+                continue
+        return fingerprints
+
+    def _check_stagnation(self) -> str | None:
+        """Return a human-readable reason if the agent is stuck in a useless loop."""
+        control = self.hyperparams.get("stagnation_control", {})
+        same_limit = int(control.get("same_command_repeat_limit", 3))
+        info_window = int(control.get("max_consecutive_info_commands", 12))
+
+        fingerprints = self._iter_executed_command_fingerprints()
+        if not fingerprints:
+            return None
+
+        from collections import Counter
+
+        counts = Counter(fingerprints)
+        for fp, count in counts.items():
+            if count >= same_limit:
+                name = fp.split("|", 1)[0]
+                return (
+                    "Repeated identical command '{}' {} times (limit: {}).".format(
+                        name, count, same_limit
+                    )
+                )
+
+        if len(fingerprints) >= info_window:
+            tail = fingerprints[-info_window:]
+            tail_names = [fp.split("|", 1)[0] for fp in tail]
+            if all(name in INFO_GATHERING_COMMANDS for name in tail_names):
+                return (
+                    "Last {} commands were info-gathering only (no fix attempt). "
+                    "Agent appears stuck reading the same code.".format(info_window)
+                )
+
+        return None
+
+    def _stop_run(self, reason: str, exit_code: int) -> None:
+        logger.warn(reason)
+        import sys
+
+        sys.exit(exit_code)
+
     def detect_command_repetition(self, ref_cmd):
         try:
-            assistant_outputs = [str(extract_dict_from_response(msg.content)["command"]) for msg in self.history if msg.role == "assistant"]
-            if str(ref_cmd["command"]) in assistant_outputs:
+            fp = self._command_fingerprint(ref_cmd)
+            if fp is None:
+                return False
+            if fp in self._iter_executed_command_fingerprints():
                 logger.info("WARNING: REPETITION DETECTED!\n\n")
                 return True
-            else:
-                return False
+            return False
         except Exception as e:
             logger.debug(f"detect_command_repetition: failed to check repetition: {e}")
             return False
@@ -929,6 +1035,25 @@ please use the indicated format and produce a list, like this:
         """
 
         instruction = instruction or self.default_cycle_instruction
+
+        stagnation_reason = self._check_stagnation()
+        if stagnation_reason:
+            from autogpt.config.hyperparams_loader import EXIT_STAGNATION
+
+            self._stop_run(
+                "Stagnation detected: {} Stopping this bug run.".format(stagnation_reason),
+                EXIT_STAGNATION,
+            )
+
+        commands_limit = self.hyperparams["commands_limit"]
+        if self.cycle_count >= commands_limit:
+            from autogpt.config.hyperparams_loader import EXIT_BUDGET_EXHAUSTED
+
+            self._stop_run(
+                "Command budget exhausted: executed {} commands (limit: {}). "
+                "Stopping to cap LLM cost.".format(self.cycle_count, commands_limit),
+                EXIT_BUDGET_EXHAUSTED,
+            )
 
         prompt: ChatSequence = self.construct_prompt(instruction, thought_process_id)
         prompt = self.on_before_think(prompt, thought_process_id, instruction)

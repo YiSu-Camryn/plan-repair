@@ -153,8 +153,9 @@ def resolve_use_self_clarification(hyperparams: Optional[dict]) -> bool:
 
 
 def load_ablation_hyperparams(experiment_file: str) -> dict:
-    with open(experiment_file) as f:
-        return json.load(f)
+    from autogpt.config.hyperparams_loader import load_hyperparams
+
+    return load_hyperparams(experiment_file)
 
 
 def format_spec_for_prompt_by_level(

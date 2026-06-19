@@ -781,8 +781,18 @@ def checkout_bug(project: str, bug_index: str):
         raise
 
 
-def run_single_bug(project: str, bug_index: str, model: str, hyperparams_file: str, max_cycles: int, temperature: float = 0.0):
+def _resolve_max_cycles(hyperparams_file: str, max_cycles: int | None) -> int:
+    from autogpt.config.hyperparams_loader import load_hyperparams
+
+    if max_cycles is not None:
+        return max_cycles
+    return load_hyperparams(hyperparams_file)["commands_limit"]
+
+
+def run_single_bug(project: str, bug_index: str, model: str, hyperparams_file: str, max_cycles: int | None, temperature: float = 0.0):
     """Run RepairAgent on a single bug."""
+    max_cycles = _resolve_max_cycles(hyperparams_file, max_cycles)
+
     prepare_ai_settings(project, bug_index)
     checkout_bug(project, bug_index)
 
@@ -893,8 +903,9 @@ def run_in_docker(bugs: list[tuple[str, str]], model: str, hyperparams: str, max
 # Main execution flow
 # ---------------------------------------------------------------------------
 
-def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_cycles: int, temperature: float = 0.0):
+def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_cycles: int | None, temperature: float = 0.0):
     """Prepare environment and run on all bugs sequentially."""
+    max_cycles = _resolve_max_cycles(hyperparams, max_cycles)
     setup_defects4j_env()
 
     # Pre-flight: verify Defects4J is available
@@ -919,11 +930,19 @@ def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_c
             results.append((project, bug_index, "OK"))
             console.print(f"  [green]{project} {bug_index} completed[/green]")
         except SystemExit as e:
-            # task_complete() calls quit() → SystemExit(0): normal agent finish.
-            # sys.exit(1) means a fatal setup error — re-raise to abort the run.
             if e.code == 0 or e.code is None:
                 results.append((project, bug_index, "OK"))
                 console.print(f"  [green]{project} {bug_index} completed[/green]")
+            elif e.code == 2:
+                results.append((project, bug_index, "FAILED: budget exhausted"))
+                console.print(
+                    f"  [red]{project} {bug_index} failed: command budget exhausted[/red]"
+                )
+            elif e.code == 3:
+                results.append((project, bug_index, "FAILED: stagnation"))
+                console.print(
+                    f"  [red]{project} {bug_index} failed: stuck in useless loop[/red]"
+                )
             else:
                 raise
         except Exception as e:
@@ -999,8 +1018,11 @@ def interactive_run():
     # 6. Configuration
     console.print(Rule("Configuration", style="bold blue"))
     console.print()
-    max_cycles = IntPrompt.ask("  Max cycles per bug", default=40)
     hyperparams = str(SCRIPT_DIR / "hyperparams.json")
+    from autogpt.config.hyperparams_loader import load_hyperparams
+
+    default_cycles = load_hyperparams(hyperparams)["commands_limit"]
+    max_cycles = IntPrompt.ask("  Max cycles per bug", default=default_cycles)
     console.print(f"  Hyperparameters: {hyperparams}")
     console.print()
 
@@ -1045,12 +1067,14 @@ def cli(ctx):
 @click.option("--model", default="gpt-4o-mini", help="LLM model name")
 @click.option("--temperature", default=0.0, type=float, help="LLM temperature (0.0–2.0)")
 @click.option("--hyperparams", default=None, help="Hyperparams JSON file path")
-@click.option("--max-cycles", default=40, type=int, help="Max agent cycles per bug")
+@click.option("--max-cycles", default=None, type=int, help="Max agent cycles per bug (default: hyperparams commands_limit)")
 @click.option("--docker", is_flag=True, help="Run inside Docker container")
 def run(bugs, bugs_file, model, temperature, hyperparams, max_cycles, docker):
     """Run RepairAgent on one or more bugs."""
     if hyperparams is None:
         hyperparams = str(SCRIPT_DIR / "hyperparams.json")
+
+    max_cycles = _resolve_max_cycles(hyperparams, max_cycles)
 
     # Parse bugs
     if bugs:

@@ -1159,8 +1159,8 @@ def lsp_hover(name:str, index:str, file_path:str, line_number:int, column:int, a
 
 ## TO BE PUT TEMPORARILY HERE
 
-from langchain.chat_models import ChatOpenAI
 from langchain.schema.messages import HumanMessage, SystemMessage, AIMessage
+from autogpt.llm.chat_model import get_langchain_chat_model
 
 """@command(
     "ask_chatgpt",
@@ -1176,7 +1176,7 @@ from langchain.schema.messages import HumanMessage, SystemMessage, AIMessage
 )
 """
 def ask_chatgpt(question: str, agent: Agent):
-    chat = ChatOpenAI(model=agent.config.static_llm, temperature=agent.config.temperature)
+    chat = get_langchain_chat_model(agent.config.static_llm, config=agent.config, temperature=agent.config.temperature)
 
     if not agent.ask_chatgpt:
         messages = [
@@ -1199,7 +1199,7 @@ def validate_fix_against_hypothesis(bug_report, hypothesis, fix, model):
     # gpt-5 family only accepts temperature=1.0
     if model.startswith("gpt-5"):
         temperature = 1.0
-    chat = ChatOpenAI(model=model, temperature=temperature)
+    chat = get_langchain_chat_model(model, temperature=temperature)
 
     messages = [
         SystemMessage(
@@ -1460,7 +1460,7 @@ def auto_complete_functions(project_name, bug_index, filepath, method_name, agen
     temperature = agent.config.temperature
     if agent.config.static_llm.startswith("gpt-5"):
         temperature = 1.0
-    chat = ChatOpenAI(model=agent.config.static_llm, temperature=temperature)
+    chat = get_langchain_chat_model(agent.config.static_llm, config=agent.config, temperature=temperature)
     messages = [
             SystemMessage(
                 content="You are a code implementer and autocompletion engine. Basically, you would be given some already written code up to some line and you would be asked to implement the function/method that is declared at the last line. Always give full implementation of the method starting from declaration (public void myFunc(...)) to all the body. Take the given context into considration. Only give the implementation of the method and nothing else. If you want to add some explanation you can write it as comments above each line of code."),

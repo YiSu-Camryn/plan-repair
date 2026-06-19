@@ -23,7 +23,7 @@ from ..providers.openai import (
     OpenAIFunctionSpec,
     count_openai_functions_tokens,
 )
-from ..providers.anthropic import is_anthropic_model
+from ..providers.anthropic import use_anthropic_native_api
 from .token_counter import *
 
 # Models that require max_completion_tokens instead of max_tokens (and reject
@@ -132,7 +132,7 @@ def create_chat_completion(
             min(model_max - prompt_tlength - 1, 4000)
         )  # the -1 is just here because we have a bug and we don't know how to fix it. When using gpt-4-0314 we get a token error.
         logger.debug(f"Prompt length: {prompt_tlength} tokens")
-        if functions and not is_anthropic_model(model):
+        if functions and not use_anthropic_native_api(model, config):
             functions_tlength = count_openai_functions_tokens(functions, model)
             max_tokens -= functions_tlength
             logger.debug(f"Functions take up {functions_tlength} tokens in API call")
@@ -150,7 +150,7 @@ def create_chat_completion(
     }
 
     # Anthropic models don't support response_format or OpenAI functions
-    if not is_anthropic_model(model):
+    if not use_anthropic_native_api(model, config):
         chat_completion_kwargs["response_format"] = { "type": "json_object" }
 
     for plugin in config.plugins:
@@ -169,7 +169,7 @@ def create_chat_completion(
     logger.debug(prompt.dump())
 
     # Route to the appropriate provider
-    if is_anthropic_model(model):
+    if use_anthropic_native_api(model, config):
         # Anthropic Claude models
         response = ianthropic.create_chat_completion(
             messages=prompt.raw(),

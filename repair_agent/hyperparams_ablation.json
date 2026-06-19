@@ -7,7 +7,11 @@
     },
     "repetition_handling": "RESTRICT",
     "external_fix_strategy": 0,
-    "commands_limit": 40,
+    "commands_limit": 100,
+    "stagnation_control": {
+        "same_command_repeat_limit": 3,
+        "max_consecutive_info_commands": 12
+    },
     "spec_level": "e39",
     "use_spec_verifier": true,
     "use_self_clarification": true

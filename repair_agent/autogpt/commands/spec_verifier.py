@@ -89,10 +89,10 @@ def verify_spec(spec_json, source_code_context, buggy_lines_info, test_info,
                                        buggy_lines_info, test_info)
 
     try:
-        from langchain.chat_models import ChatOpenAI
+        from autogpt.llm.chat_model import get_langchain_chat_model
         from langchain.schema.messages import HumanMessage, SystemMessage
 
-        chat = ChatOpenAI(model=model)
+        chat = get_langchain_chat_model(model)
         messages = [
             SystemMessage(content=VERIFIER_SYSTEM_PROMPT),
             HumanMessage(content=user_prompt),
