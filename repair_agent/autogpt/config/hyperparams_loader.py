@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-DEFAULT_COMMANDS_LIMIT = 100
+DEFAULT_COMMANDS_LIMIT = 40
 
 # Process exit codes used when stopping a bug run early.
 EXIT_BUDGET_EXHAUSTED = 2

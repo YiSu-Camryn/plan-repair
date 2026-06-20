@@ -7,6 +7,7 @@ Five spec injection conditions (``hyperparams_ablation.json`` → ``spec_level``
 - ``core``  (A2): short + code_violations + fix_targets (~250 tokens)
 - ``full``  (A3): E34-style — all diagnostic fields (~600 tokens)
 - ``e39``   (A4): full + fix_direction, confidence, ACTION tweaks
+- ``raw_context`` (A5): raw gathered bug context — no spec LLM, no verification
 
 Optional verifier ablation (``use_spec_verifier``):
 
@@ -50,6 +51,7 @@ SPEC_LEVEL_SHORT = "short"
 SPEC_LEVEL_CORE = "core"
 SPEC_LEVEL_FULL = "full"
 SPEC_LEVEL_E39 = "e39"
+SPEC_LEVEL_RAW_CONTEXT = "raw_context"
 
 SPEC_LEVELS = (
     SPEC_LEVEL_NONE,
@@ -57,6 +59,7 @@ SPEC_LEVELS = (
     SPEC_LEVEL_CORE,
     SPEC_LEVEL_FULL,
     SPEC_LEVEL_E39,
+    SPEC_LEVEL_RAW_CONTEXT,
 )
 
 SPEC_LEVEL_ALIASES = {
@@ -65,8 +68,10 @@ SPEC_LEVEL_ALIASES = {
     "a2": SPEC_LEVEL_CORE,
     "a3": SPEC_LEVEL_FULL,
     "a4": SPEC_LEVEL_E39,
+    "a5": SPEC_LEVEL_RAW_CONTEXT,
     "no_spec": SPEC_LEVEL_NONE,
     "minimal": SPEC_LEVEL_SHORT,
+    "concat": SPEC_LEVEL_RAW_CONTEXT,
 }
 
 DEFAULT_SPEC_LEVEL = SPEC_LEVEL_E39
@@ -263,6 +268,23 @@ def _make_patched_generate_spec(
             }
 
         return skip_generate_spec
+
+    if level == SPEC_LEVEL_RAW_CONTEXT:
+
+        def raw_context_generate_spec(*args, **kwargs) -> dict:
+            from autogpt.commands.spec_generator import generate_raw_context_injection
+
+            logger.info("ABLATION: spec_level=raw_context — injecting gathered context only")
+            result = generate_raw_context_injection(*args, **kwargs)
+            if result.get("success") and result.get("prompt_section", "").strip():
+                logger.info(
+                    "ABLATION: Injected level=raw_context ({} chars)".format(
+                        len(result["prompt_section"])
+                    )
+                )
+            return result
+
+        return raw_context_generate_spec
 
     def ablation_generate_spec(*args, **kwargs) -> dict:
         kwargs["use_spec_verifier"] = use_spec_verifier

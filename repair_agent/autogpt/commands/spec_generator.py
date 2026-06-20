@@ -776,7 +776,7 @@ CRITICAL:
 def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
                       buggy_method_body, code_window, test_failure, test_source,
                       sibling_methods, class_header, extra_methods=None,
-                      peer_methods=None):
+                      peer_methods=None, include_task=True):
     """Assemble the user prompt."""
     sections = []
 
@@ -851,10 +851,11 @@ def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
         sections.append("```")
         sections.append("")
 
-    sections.append("## Task")
-    sections.append("Generate a behavioral specification as JSON.")
-    sections.append("Focus on what the Javadoc says vs what the code actually does.")
-    sections.append("ONLY reference methods and fields visible in the code above.")
+    if include_task:
+        sections.append("## Task")
+        sections.append("Generate a behavioral specification as JSON.")
+        sections.append("Focus on what the Javadoc says vs what the code actually does.")
+        sections.append("ONLY reference methods and fields visible in the code above.")
 
     return "\n".join(sections)
 
@@ -862,6 +863,154 @@ def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
 # ─────────────────────────────────────────────────────────────────────
 # 3. Main Entry Point
 # ─────────────────────────────────────────────────────────────────────
+
+RAW_CONTEXT_HEADER = "## Bug Context (Raw)\n\n"
+
+
+def gather_spec_context(project_name, bug_index, test_results,
+                        workspace="auto_gpt_workspace"):
+    """Gather raw bug context used for spec generation (no LLM call)."""
+    source_info = read_buggy_source(project_name, bug_index, workspace)
+    buggy_methods_str = read_buggy_methods(project_name, bug_index)
+    buggy_method_name = _extract_method_name(buggy_methods_str)
+    trigger_classes, trigger_content = read_trigger_tests(project_name, bug_index)
+    test_code = read_failing_test_code(project_name, bug_index, workspace)
+
+    effective_test_failure = test_results if test_results else trigger_content
+
+    javadoc = ""
+    method_body = ""
+    extra_methods = []
+    if source_info["lines"] and source_info["buggy_entries"]:
+        disk_lines = [line_text for _, line_text in source_info["lines"]]
+        first_line_num = source_info["buggy_entries"][0][1]
+        javadoc = extract_javadoc(disk_lines, first_line_num)
+
+        if source_info["full_source"]:
+            method_body = extract_buggy_method_body(source_info["full_source"], first_line_num)
+
+            seen_methods = {method_body[:80]} if method_body else set()
+            for _, ln, _ in source_info["buggy_entries"][1:]:
+                extra_body = extract_buggy_method_body(source_info["full_source"], ln)
+                if extra_body and extra_body[:80] not in seen_methods:
+                    seen_methods.add(extra_body[:80])
+                    extra_jd = extract_javadoc(disk_lines, ln)
+                    if extra_jd:
+                        extra_methods.append("// Additional buggy location:\n" + extra_jd + "\n" + extra_body)
+                    else:
+                        extra_methods.append("// Additional buggy location:\n" + extra_body)
+
+    sibling_methods = ""
+    peer_methods = ""
+    if buggy_method_name and source_info["file_path"] and source_info["buggy_entries"]:
+        project_dir = "{}_{}_buggy".format(project_name.lower(), bug_index)
+        first_line_num = source_info["buggy_entries"][0][1]
+        sibling_methods = extract_sibling_methods(
+            workspace, project_dir, source_info["file_path"],
+            buggy_method_name, first_line_num
+        )
+        peer_methods = extract_peer_methods(
+            workspace, project_dir, source_info["file_path"],
+            buggy_method_name, first_line_num
+        )
+
+    class_header = ""
+    if source_info["file_path"]:
+        project_dir = "{}_{}_buggy".format(project_name.lower(), bug_index)
+        class_header = extract_class_header(workspace, project_dir, source_info["file_path"])
+
+    buggy_lines_info = ""
+    if source_info["buggy_entries"]:
+        bl_lines = []
+        for fp, ln, code in source_info["buggy_entries"]:
+            if code == "FAULT_OF_OMISSION":
+                bl_lines.append("  {} # Line {} (FAULT_OF_OMISSION — code at or near this line is implicated; the fix may involve adding, changing, OR removing code)".format(fp, ln))
+            elif code:
+                bl_lines.append("  {} # Line {}: {}".format(fp, ln, code))
+            else:
+                bl_lines.append("  {} # Line {}".format(fp, ln))
+        buggy_lines_info = "\n".join(bl_lines)
+
+    gathered_meta = {
+        "project": project_name,
+        "bug_index": str(bug_index),
+        "buggy_file": source_info["file_path"],
+        "buggy_method_name": buggy_method_name,
+        "javadoc_found": bool(javadoc),
+        "javadoc_length": len(javadoc),
+        "method_body_found": bool(method_body),
+        "method_body_length": len(method_body),
+        "extra_methods_count": len(extra_methods),
+        "sibling_methods_found": bool(sibling_methods),
+        "sibling_methods_length": len(sibling_methods),
+        "peer_methods_found": bool(peer_methods),
+        "peer_methods_length": len(peer_methods),
+        "class_header_found": bool(class_header),
+        "trigger_tests_found": len(trigger_classes),
+        "test_code_found": bool(test_code),
+        "test_code_length": len(test_code),
+    }
+
+    return {
+        "project_name": project_name,
+        "bug_index": bug_index,
+        "buggy_lines_info": buggy_lines_info,
+        "javadoc": javadoc,
+        "method_body": method_body,
+        "code_window": source_info["window"],
+        "test_failure": effective_test_failure,
+        "test_source": test_code,
+        "sibling_methods": sibling_methods,
+        "class_header": class_header,
+        "extra_methods": extra_methods,
+        "peer_methods": peer_methods,
+        "gathered_meta": gathered_meta,
+    }
+
+
+def generate_raw_context_injection(project_name, bug_index, localization_info, test_results,
+                                   model="gpt-4o-mini", workspace="auto_gpt_workspace",
+                                   **_kwargs):
+    """Ablation A5: inject gathered bug context without spec LLM or verification."""
+    logger.info("SPEC-RAW: Injecting raw context for {}-{}".format(project_name, bug_index))
+
+    try:
+        ctx = gather_spec_context(project_name, bug_index, test_results, workspace)
+        gathered_meta = {**ctx["gathered_meta"], "model": model, "injection_mode": "raw_context"}
+        _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
+
+        context_text = build_spec_prompt(
+            project_name=ctx["project_name"],
+            bug_index=ctx["bug_index"],
+            buggy_lines_info=ctx["buggy_lines_info"],
+            javadoc=ctx["javadoc"],
+            buggy_method_body=ctx["method_body"],
+            code_window=ctx["code_window"],
+            test_failure=ctx["test_failure"],
+            test_source=ctx["test_source"],
+            sibling_methods=ctx["sibling_methods"],
+            class_header=ctx["class_header"],
+            extra_methods=ctx["extra_methods"],
+            peer_methods=ctx["peer_methods"],
+            include_task=False,
+        )
+        prompt_section = RAW_CONTEXT_HEADER + context_text
+        _save_spec_log(project_name, bug_index, "ablation_injected_raw_context", prompt_section)
+
+        logger.info("SPEC-RAW: Success. Prompt section: {} chars".format(len(prompt_section)))
+        return {
+            "success": True,
+            "spec_json": None,
+            "prompt_section": prompt_section,
+            "error": None,
+        }
+    except Exception as e:
+        import traceback
+        err_msg = "{}\n{}".format(e, traceback.format_exc())
+        logger.info("SPEC-RAW: Failed: {}".format(err_msg))
+        _save_spec_log(project_name, bug_index, "error", err_msg)
+        return {"success": False, "spec_json": None, "prompt_section": "", "error": str(e)}
+
 
 def generate_spec(project_name, bug_index, localization_info, test_results,
                   model="gpt-4o-mini", workspace="auto_gpt_workspace",
@@ -876,94 +1025,23 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
     logger.info("SPEC-GEN: Generating spec for {}-{}".format(project_name, bug_index))
 
     try:
-        # ── Phase 1: Gather all information ──
-        source_info = read_buggy_source(project_name, bug_index, workspace)
-        buggy_methods_str = read_buggy_methods(project_name, bug_index)
-        buggy_method_name = _extract_method_name(buggy_methods_str)
-        trigger_classes, trigger_content = read_trigger_tests(project_name, bug_index)
-        test_code = read_failing_test_code(project_name, bug_index, workspace)
-
-        # Use trigger_tests stack traces as fallback test failure info
-        effective_test_failure = test_results if test_results else trigger_content
-
-        javadoc = ""
-        method_body = ""
-        extra_methods = []  # Additional method bodies for multi-location bugs
-        if source_info["lines"] and source_info["buggy_entries"]:
-            disk_lines = [line_text for _, line_text in source_info["lines"]]
-            first_line_num = source_info["buggy_entries"][0][1]
-            javadoc = extract_javadoc(disk_lines, first_line_num)
-
-            if source_info["full_source"]:
-                method_body = extract_buggy_method_body(source_info["full_source"], first_line_num)
-
-                # Extract additional method bodies for multi-location bugs
-                seen_methods = {method_body[:80]} if method_body else set()
-                for _, ln, _ in source_info["buggy_entries"][1:]:
-                    extra_body = extract_buggy_method_body(source_info["full_source"], ln)
-                    if extra_body and extra_body[:80] not in seen_methods:
-                        seen_methods.add(extra_body[:80])
-                        extra_jd = extract_javadoc(disk_lines, ln)
-                        if extra_jd:
-                            extra_methods.append("// Additional buggy location:\n" + extra_jd + "\n" + extra_body)
-                        else:
-                            extra_methods.append("// Additional buggy location:\n" + extra_body)
-
-        sibling_methods = ""
-        peer_methods = ""
-        if buggy_method_name and source_info["file_path"] and source_info["buggy_entries"]:
-            project_dir = "{}_{}_buggy".format(project_name.lower(), bug_index)
-            first_line_num = source_info["buggy_entries"][0][1]
-            sibling_methods = extract_sibling_methods(
-                workspace, project_dir, source_info["file_path"],
-                buggy_method_name, first_line_num
-            )
-            peer_methods = extract_peer_methods(
-                workspace, project_dir, source_info["file_path"],
-                buggy_method_name, first_line_num
-            )
-
-        class_header = ""
-        if source_info["file_path"]:
-            project_dir = "{}_{}_buggy".format(project_name.lower(), bug_index)
-            class_header = extract_class_header(workspace, project_dir, source_info["file_path"])
-
-        buggy_lines_info = ""
-        if source_info["buggy_entries"]:
-            bl_lines = []
-            for fp, ln, code in source_info["buggy_entries"]:
-                if code == "FAULT_OF_OMISSION":
-                    bl_lines.append("  {} # Line {} (FAULT_OF_OMISSION — code at or near this line is implicated; the fix may involve adding, changing, OR removing code)".format(fp, ln))
-                elif code:
-                    bl_lines.append("  {} # Line {}: {}".format(fp, ln, code))
-                else:
-                    bl_lines.append("  {} # Line {}".format(fp, ln))
-            buggy_lines_info = "\n".join(bl_lines)
-
-        # ── LOG: gathered info ──
-        gathered_meta = {
-            "project": project_name, "bug_index": str(bug_index), "model": model,
-            "buggy_file": source_info["file_path"],
-            "buggy_method_name": buggy_method_name,
-            "javadoc_found": bool(javadoc), "javadoc_length": len(javadoc),
-            "method_body_found": bool(method_body), "method_body_length": len(method_body),
-            "extra_methods_count": len(extra_methods),
-            "sibling_methods_found": bool(sibling_methods), "sibling_methods_length": len(sibling_methods),
-            "peer_methods_found": bool(peer_methods), "peer_methods_length": len(peer_methods),
-            "class_header_found": bool(class_header),
-            "trigger_tests_found": len(trigger_classes),
-            "test_code_found": bool(test_code), "test_code_length": len(test_code),
-        }
+        ctx = gather_spec_context(project_name, bug_index, test_results, workspace)
+        gathered_meta = {**ctx["gathered_meta"], "model": model}
         _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
 
-        # ── Phase 2: Build prompt ──
         user_prompt = build_spec_prompt(
-            project_name=project_name, bug_index=bug_index,
-            buggy_lines_info=buggy_lines_info, javadoc=javadoc,
-            buggy_method_body=method_body, code_window=source_info["window"],
-            test_failure=effective_test_failure, test_source=test_code,
-            sibling_methods=sibling_methods, class_header=class_header,
-            extra_methods=extra_methods, peer_methods=peer_methods,
+            project_name=ctx["project_name"],
+            bug_index=ctx["bug_index"],
+            buggy_lines_info=ctx["buggy_lines_info"],
+            javadoc=ctx["javadoc"],
+            buggy_method_body=ctx["method_body"],
+            code_window=ctx["code_window"],
+            test_failure=ctx["test_failure"],
+            test_source=ctx["test_source"],
+            sibling_methods=ctx["sibling_methods"],
+            class_header=ctx["class_header"],
+            extra_methods=ctx["extra_methods"],
+            peer_methods=ctx["peer_methods"],
         )
 
         # ── LOG: full prompt ──
@@ -1007,12 +1085,12 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
         if use_spec_verifier:
             from autogpt.commands.spec_verifier import verify_spec
 
-            verify_context = method_body if method_body else source_info.get("window", "")
+            verify_context = ctx["method_body"] if ctx["method_body"] else ctx["code_window"]
             verify_result = verify_spec(
                 spec_json=spec_json,
                 source_code_context=verify_context,
-                buggy_lines_info=buggy_lines_info,
-                test_info=effective_test_failure,
+                buggy_lines_info=ctx["buggy_lines_info"],
+                test_info=ctx["test_failure"],
                 model=model,
             )
             _save_spec_log(project_name, bug_index, "verify_result_json", verify_result)
@@ -1074,7 +1152,7 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
 
             answer = _answer_clarifying_question(
                 spec_json["clarifying_question"],
-                test_code, effective_test_failure, method_body, model,
+                ctx["test_source"], ctx["test_failure"], ctx["method_body"], model,
             )
 
             if answer:
