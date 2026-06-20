@@ -773,15 +773,70 @@ CRITICAL:
 - The fix must work for ARBITRARY inputs, not just the specific test values. Never suggest hardcoding expected outputs."""
 
 
+def _looks_like_test_failure(text: str) -> bool:
+    """True when text looks like real test output, not a Defects4J/setup error."""
+    if not text or not str(text).strip():
+        return False
+    lower = str(text).lower()
+    bad_markers = (
+        "not a valid working directory",
+        "cannot open config file",
+        "tricky situation",
+        "auto-gpt is not running",
+        "checkout failed",
+    )
+    if any(marker in lower for marker in bad_markers):
+        return False
+    good_markers = (
+        "build failed",
+        "failing test",
+        "::",
+        "assertion",
+        "exception",
+        "at org.",
+        "at com.",
+        "junit",
+        "expected:",
+        "actual:",
+    )
+    return any(marker in lower for marker in good_markers)
+
+
+def _resolve_test_failure_output(test_results, trigger_content: str) -> str:
+    """Prefer runtime test output; fall back to static trigger metadata."""
+    if _looks_like_test_failure(test_results):
+        return str(test_results)
+    if trigger_content and trigger_content.strip():
+        return trigger_content.strip()
+    return str(test_results).strip() if test_results else ""
+
+
 def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
                       buggy_method_body, code_window, test_failure, test_source,
                       sibling_methods, class_header, extra_methods=None,
-                      peer_methods=None, include_task=True):
+                      peer_methods=None, include_task=True,
+                      localization_info=None, buggy_methods_text=None,
+                      trigger_tests_content=None, runtime_test_failure=None):
     """Assemble the user prompt."""
     sections = []
 
     sections.append("# Bug: {}-{}".format(project_name, bug_index))
     sections.append("")
+
+    if localization_info and str(localization_info).strip():
+        sections.append("## Bug Localization and Metadata")
+        sections.append(str(localization_info).strip()[:4000])
+        sections.append("")
+
+    if buggy_methods_text and str(buggy_methods_text).strip():
+        sections.append("## Buggy Methods (metadata)")
+        sections.append(str(buggy_methods_text).strip()[:3000])
+        sections.append("")
+
+    if trigger_tests_content and str(trigger_tests_content).strip():
+        sections.append("## Trigger Tests (static metadata)")
+        sections.append(str(trigger_tests_content).strip()[:2500])
+        sections.append("")
 
     if javadoc:
         sections.append("## 1. Javadoc (Developer's Documented Intent)")
@@ -816,9 +871,11 @@ def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
             sections.append("```")
         sections.append("")
 
-    if test_failure:
-        sections.append("## 4. Test Failure Output")
-        sections.append(test_failure[:1500])
+    if runtime_test_failure is None:
+        runtime_test_failure = test_failure if _looks_like_test_failure(test_failure) else ""
+    if runtime_test_failure and str(runtime_test_failure).strip():
+        sections.append("## 4. Test Failure Output (runtime)")
+        sections.append(str(runtime_test_failure)[:1500])
         sections.append("")
 
     if test_source:
@@ -868,7 +925,8 @@ RAW_CONTEXT_HEADER = "## Bug Context (Raw)\n\n"
 
 
 def gather_spec_context(project_name, bug_index, test_results,
-                        workspace="auto_gpt_workspace"):
+                        workspace="auto_gpt_workspace",
+                        localization_info=None):
     """Gather raw bug context used for spec generation (no LLM call)."""
     source_info = read_buggy_source(project_name, bug_index, workspace)
     buggy_methods_str = read_buggy_methods(project_name, bug_index)
@@ -876,7 +934,7 @@ def gather_spec_context(project_name, bug_index, test_results,
     trigger_classes, trigger_content = read_trigger_tests(project_name, bug_index)
     test_code = read_failing_test_code(project_name, bug_index, workspace)
 
-    effective_test_failure = test_results if test_results else trigger_content
+    effective_test_failure = _resolve_test_failure_output(test_results, trigger_content)
 
     javadoc = ""
     method_body = ""
@@ -949,6 +1007,12 @@ def gather_spec_context(project_name, bug_index, test_results,
         "trigger_tests_found": len(trigger_classes),
         "test_code_found": bool(test_code),
         "test_code_length": len(test_code),
+        "localization_included": bool(localization_info and str(localization_info).strip()),
+        "test_failure_source": (
+            "runtime" if _looks_like_test_failure(test_results)
+            else ("trigger" if trigger_content else "none")
+        ),
+        "source_checkout_available": bool(source_info.get("full_source")),
     }
 
     return {
@@ -964,6 +1028,10 @@ def gather_spec_context(project_name, bug_index, test_results,
         "class_header": class_header,
         "extra_methods": extra_methods,
         "peer_methods": peer_methods,
+        "localization_info": localization_info or "",
+        "buggy_methods_text": buggy_methods_str,
+        "trigger_tests_content": trigger_content,
+        "runtime_test_failure": test_results if _looks_like_test_failure(test_results) else "",
         "gathered_meta": gathered_meta,
     }
 
@@ -975,7 +1043,10 @@ def generate_raw_context_injection(project_name, bug_index, localization_info, t
     logger.info("SPEC-RAW: Injecting raw context for {}-{}".format(project_name, bug_index))
 
     try:
-        ctx = gather_spec_context(project_name, bug_index, test_results, workspace)
+        ctx = gather_spec_context(
+            project_name, bug_index, test_results, workspace,
+            localization_info=localization_info,
+        )
         gathered_meta = {**ctx["gathered_meta"], "model": model, "injection_mode": "raw_context"}
         _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
 
@@ -992,6 +1063,10 @@ def generate_raw_context_injection(project_name, bug_index, localization_info, t
             class_header=ctx["class_header"],
             extra_methods=ctx["extra_methods"],
             peer_methods=ctx["peer_methods"],
+            localization_info=ctx["localization_info"],
+            buggy_methods_text=ctx["buggy_methods_text"],
+            trigger_tests_content=ctx["trigger_tests_content"],
+            runtime_test_failure=ctx["runtime_test_failure"],
             include_task=False,
         )
         prompt_section = RAW_CONTEXT_HEADER + context_text
@@ -1025,7 +1100,10 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
     logger.info("SPEC-GEN: Generating spec for {}-{}".format(project_name, bug_index))
 
     try:
-        ctx = gather_spec_context(project_name, bug_index, test_results, workspace)
+        ctx = gather_spec_context(
+            project_name, bug_index, test_results, workspace,
+            localization_info=localization_info,
+        )
         gathered_meta = {**ctx["gathered_meta"], "model": model}
         _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
 
@@ -1042,6 +1120,10 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
             class_header=ctx["class_header"],
             extra_methods=ctx["extra_methods"],
             peer_methods=ctx["peer_methods"],
+            localization_info=ctx["localization_info"],
+            buggy_methods_text=ctx["buggy_methods_text"],
+            trigger_tests_content=ctx["trigger_tests_content"],
+            runtime_test_failure=ctx["runtime_test_failure"],
         )
 
         # ── LOG: full prompt ──

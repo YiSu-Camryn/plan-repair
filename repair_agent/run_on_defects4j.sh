@@ -1,5 +1,8 @@
 #!/bin/bash
-export PATH=$PATH:$(pwd)/defects4j/framework/bin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+
+export PATH=$PATH:"$SCRIPT_DIR/defects4j/framework/bin"
 cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
 export PERL5LIB="${HOME}/perl5/lib/perl5${PERL5LIB:+:$PERL5LIB}"
 for LANG in en_AU.UTF-8 en_GB.UTF-8 C.UTF-8 C; do
