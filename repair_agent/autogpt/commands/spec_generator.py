@@ -140,6 +140,27 @@ def read_buggy_methods(project_name, bug_index):
     return ""
 
 
+def filter_buggy_methods_metadata(buggy_methods_str):
+    """Return only Defects4J buggy-methods lines with flag > 0 (e.g. ``...,1``)."""
+    if not buggy_methods_str or not str(buggy_methods_str).strip():
+        return ""
+
+    flagged = []
+    for line in str(buggy_methods_str).strip().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        comma_idx = line.rfind(",")
+        if comma_idx < 0:
+            continue
+        try:
+            if int(line[comma_idx + 1 :].strip()) > 0:
+                flagged.append(line)
+        except ValueError:
+            continue
+    return "\n".join(flagged)
+
+
 def read_trigger_tests(project_name, bug_index):
     """Read trigger test info from static D4J metadata (always available).
 
@@ -1050,6 +1071,12 @@ def generate_raw_context_injection(project_name, bug_index, localization_info, t
         gathered_meta = {**ctx["gathered_meta"], "model": model, "injection_mode": "raw_context"}
         _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
 
+        flagged_methods = filter_buggy_methods_metadata(ctx["buggy_methods_text"])
+        # Localization already lists flagged methods; avoid duplicating the full file.
+        buggy_methods_for_prompt = (
+            None if ctx.get("localization_info") else flagged_methods or None
+        )
+
         context_text = build_spec_prompt(
             project_name=ctx["project_name"],
             bug_index=ctx["bug_index"],
@@ -1064,7 +1091,7 @@ def generate_raw_context_injection(project_name, bug_index, localization_info, t
             extra_methods=ctx["extra_methods"],
             peer_methods=ctx["peer_methods"],
             localization_info=ctx["localization_info"],
-            buggy_methods_text=ctx["buggy_methods_text"],
+            buggy_methods_text=buggy_methods_for_prompt,
             trigger_tests_content=ctx["trigger_tests_content"],
             runtime_test_failure=ctx["runtime_test_failure"],
             include_task=False,
