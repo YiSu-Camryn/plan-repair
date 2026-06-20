@@ -1,36 +1,39 @@
-import re
 import sys
+from importlib.metadata import PackageNotFoundError, version
+from packaging.requirements import Requirement
 
-import pkg_resources
+
+def _package_version(name: str) -> str | None:
+    for candidate in (name, name.replace("-", "_"), name.replace("_", "-")):
+        try:
+            return version(candidate)
+        except PackageNotFoundError:
+            continue
+    return None
 
 
 def main():
     requirements_file = sys.argv[1]
-    with open(requirements_file, "r") as f:
+    with open(requirements_file, "r", encoding="utf-8") as handle:
         required_packages = [
-            line.strip().split("#")[0].strip() for line in f.readlines()
+            line.strip().split("#")[0].strip() for line in handle.readlines()
         ]
-
-    installed_packages = {pkg.key: pkg.version for pkg in pkg_resources.working_set}
 
     missing_packages = []
     for required_package in required_packages:
-        if not required_package:  # Skip empty lines
+        if not required_package:
             continue
-        pkg = pkg_resources.Requirement.parse(required_package)
-        if (
-            pkg.key not in installed_packages
-            or pkg_resources.parse_version(installed_packages[pkg.key])
-            not in pkg.specifier
-        ):
-            missing_packages.append(str(pkg))
+        req = Requirement(required_package)
+        installed_version = _package_version(req.name)
+        if installed_version is None or installed_version not in req.specifier:
+            missing_packages.append(str(req))
 
     if missing_packages:
         print("Missing packages:")
         print(", ".join(missing_packages))
         sys.exit(1)
-    else:
-        print("All packages are installed.")
+
+    print("All packages are installed.")
 
 
 if __name__ == "__main__":
