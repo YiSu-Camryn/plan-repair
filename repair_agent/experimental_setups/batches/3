@@ -96,17 +96,11 @@ Jsoup 30
 
 Jsoup 10
 
-Lang 17
-
-Lang 65
-
 Lang 14
 
 Lang 58
 
 Lang 9
-
-Lang 23
 
 Lang 47
 
@@ -119,8 +113,6 @@ Lang 48
 Lang 33
 
 Lang 34
-
-Lang 50
 
 Lang 4
 
@@ -136,8 +128,6 @@ Lang 61
 
 Lang 40
 
-Lang 5
-
 Lang 18
 
 Lang 8
@@ -146,17 +136,7 @@ Lang 2
 
 Lang 42
 
-Lang 1
-
-Lang 31
-
-Lang 27
-
 Lang 15
-
-Lang 36
-
-Lang 46
 
 Lang 55
 
@@ -167,8 +147,6 @@ Lang 43
 Lang 19
 
 Lang 59
-
-Lang 53
 
 Lang 29
 
@@ -184,45 +162,17 @@ Lang 62
 
 Lang 38
 
-Lang 11
-
-Lang 12
-
-Lang 41
-
 Lang 13
-
-Lang 3
 
 Lang 20
 
 Lang 24
 
-Lang 35
-
-Lang 64
-
-Lang 37
-
-Lang 54
-
 Lang 28
-
-Lang 32
-
-Lang 52
 
 Lang 44
 
 Lang 60
-
-Lang 7
-
-Lang 39
-
-Lang 45
-
-Lang 30
 
 Lang 10
 
@@ -246,11 +196,7 @@ JacksonCore 16
 
 JacksonCore 26
 
-JacksonCore 5
-
 JacksonCore 18
-
-JacksonCore 8
 
 JacksonCore 2
 
@@ -286,13 +232,7 @@ Math 14
 
 Math 58
 
-Math 9
-
 Math 23
-
-Math 47
-
-Math 102
 
 Math 21
 
@@ -308,8 +248,6 @@ Math 50
 
 Math 4
 
-Math 25
-
 Math 6
 
 Math 16
@@ -318,13 +256,9 @@ Math 26
 
 Math 83
 
-Math 93
-
 Math 71
 
 Math 68
-
-Math 69
 
 Math 61
 
@@ -342,23 +276,13 @@ Math 42
 
 Math 1
 
-Math 31
-
 Math 27
 
-Math 66
-
 Math 15
-
-Math 36
 
 Math 86
 
 Math 46
-
-Math 100
-
-Math 55
 
 Math 95
 
@@ -380,8 +304,6 @@ Math 59
 
 Math 104
 
-Math 53
-
 Math 29
 
 Math 63
@@ -392,8 +314,4 @@ Math 51
 
 Math 57
 
-Math 78
-
 Math 62
-
-Math 81
