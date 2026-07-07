@@ -32,14 +32,14 @@ Given a buggy method, BRIEF generates a patch through four stages: evidence coll
 
 2. **Clone and prepare:**
 
-   ```bash
-   cd RepairAgent/repair_agent
-   rm -rf defects4j
-   git clone https://github.com/rjust/defects4j.git
-   cp -r ../data/buggy-lines defects4j
-   cp -r ../data/buggy-methods defects4j
-   cd ..
-   ```
+```bash
+cd RepairAgent/repair_agent
+rm -rf defects4j
+git clone https://github.com/rjust/defects4j.git
+cp -r ../data/buggy-lines defects4j
+cp -r ../data/buggy-methods defects4j
+cd ..
+```
 
 3. **Quick Setup:**
 
