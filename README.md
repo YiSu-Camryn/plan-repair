@@ -11,7 +11,7 @@ Plans to Ground Automated Program Repair</strong>
 
 BRIEF collects complementary evidence from NL documentation, failing tests, and surrounding code context, and synthesizes it into a structured behavioral repair plan stating intended behavior, fault locations, and repair requirements. An independent plan auditor screens the plan for unsupported claims and incomplete fault coverage, triggering revision when weaknesses are detected; the verified plan is then injected as persistent guidance into an LLM-based repair backend at each iteration, anchoring behavioral intent and reducing diagnostic drift.
 
-On the [Defects4J](https://github.com/rjust/defects4j) benchmark, RepairAgent correctly fixed **217 bugs**, outperforming prior state-of-the-art tools.
+On the [Defects4J](https://github.com/rjust/defects4j) benchmark, BRIEF correctly fixed **217 bugs**, outperforming prior state-of-the-art tools.
 
 
 ## How It Works
