@@ -68,9 +68,14 @@ class BaseAgent(metaclass=ABCMeta):
         cycle_budget: Optional[int] = 1,
         send_token_limit: Optional[int] = None,
         summary_max_tlength: Optional[int] = None,
-        experiment_file: str = None
+        experiment_file: str = None,
+        spec_max_attempts: Optional[int] = None,
     ):
         self.experiment_file = experiment_file
+        from autogpt.config.hyperparams_loader import load_hyperparams, resolve_spec_max_attempts
+
+        self.hyperparams = load_hyperparams(experiment_file)
+        self.spec_max_attempts = resolve_spec_max_attempts(self.hyperparams, spec_max_attempts)
         self.ai_config = ai_config
         """The AIConfig or "personality" object associated with this agent."""
 
@@ -103,6 +108,11 @@ class BaseAgent(metaclass=ABCMeta):
 
         self.cycle_count = 0
         """The number of cycles that the agent has run since its initialization."""
+
+        self.run_exit_code = 0
+        self.run_exit_reason: Optional[str] = None
+        self.spec_result: dict[str, Any] = {}
+        self.bug_run_started_at: Optional[str] = None
         
         with open("commands_by_state.json") as cbs:
             self.cmds_by_state = json.load(cbs)
@@ -134,24 +144,30 @@ class BaseAgent(metaclass=ABCMeta):
         if not os.path.isdir(_buggy_dir):
             raise RuntimeError("Buggy workspace missing after checkout: {}".format(_buggy_dir))
         # ── Generate behavioral spec at init ──
-        try:
-            from autogpt.commands.spec_generator import generate_spec
-            _spec_model = self.config.smart_llm if self.big_brain else self.config.fast_llm
-            _spec_result = generate_spec(
-                project_name=self.project_name,
-                bug_index=self.bug_index,
-                localization_info=self.localization_info,
-                test_results=self.tests_results,
-                model=_spec_model,
-                workspace="auto_gpt_workspace",
-            )
-            if _spec_result.get("success") and _spec_result.get("prompt_section"):
+        from autogpt.commands.spec_generator import generate_spec
+        from autogpt.spec_failure_recorder import SpecPipelineError
+
+        _spec_model = self.config.smart_llm if self.big_brain else self.config.fast_llm
+        _spec_result = generate_spec(
+            project_name=self.project_name,
+            bug_index=self.bug_index,
+            localization_info=self.localization_info,
+            test_results=self.tests_results,
+            model=_spec_model,
+            workspace="auto_gpt_workspace",
+            max_attempts=self.spec_max_attempts,
+        )
+        if _spec_result.get("success"):
+            self.spec_result = _spec_result
+            if _spec_result.get("prompt_section"):
                 self.prompt_dictionary["spec_section"] = _spec_result["prompt_section"]
-                logger.info("SPEC-INIT: Generated ({} chars)".format(len(_spec_result["prompt_section"])))
-            else:
-                logger.info("SPEC-INIT: Failed: {}".format(_spec_result.get("error")))
-        except Exception as _spec_e:
-            logger.info("SPEC-INIT: Exception: {}".format(_spec_e))
+                logger.info(
+                    "SPEC-INIT: Generated ({} chars)".format(
+                        len(_spec_result["prompt_section"])
+                    )
+                )
+        else:
+            raise SpecPipelineError(_spec_result)
         """
         The system prompt sets up the AI's personality and explains its goals,
         available resources, and restrictions.
@@ -239,10 +255,6 @@ class BaseAgent(metaclass=ABCMeta):
 
         self.buggy_lines = ""
         self.similar_calls = None
-
-        from autogpt.config.hyperparams_loader import load_hyperparams
-
-        self.hyperparams = load_hyperparams(experiment_file)
 
         self.extracted_methods = []
 
@@ -488,6 +500,8 @@ please use the indicated format and produce a list, like this:
         return None
 
     def _stop_run(self, reason: str, exit_code: int) -> None:
+        self.run_exit_reason = reason
+        self.run_exit_code = exit_code
         logger.warn(reason)
         import sys
 

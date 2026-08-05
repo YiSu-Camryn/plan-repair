@@ -99,6 +99,12 @@ import click
     type=str,
     help="Specify the OpenAI model to use (e.g., gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-4o-mini, gpt-3.5-turbo, etc.)."
 )
+@click.option(
+    "--spec-max-attempts",
+    type=int,
+    default=None,
+    help="Max generate+verify rounds for the behavioral spec (default: hyperparams spec_control.max_attempts).",
+)
 
 @click.pass_context
 def main(
@@ -123,6 +129,7 @@ def main(
     ai_goal: tuple[str],
     experiment_file: str,
     model: Optional[str],      # NEW!
+    spec_max_attempts: Optional[int],
 ) -> None:
     """
     Welcome to AutoGPT an experimental open-source application showcasing the capabilities of the GPT-4 pushing the boundaries of AI.
@@ -155,6 +162,7 @@ def main(
             ai_goals=ai_goal,
             experiment_file=experiment_file,
             model=model,       # Pass through!
+            spec_max_attempts=spec_max_attempts,
         )
 
 

@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --job-name=repairagent-batch
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+#SBATCH --time=48:00:00
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=4
+
+# sbatch --export=BATCH_ID=0 examples/run_batch_parallel.sbatch.example
+# sbatch --array=0-4 examples/run_batch_parallel.sbatch.example
+
+set -euo pipefail
+
+REPAIRAGENT_SRC="$HOME/spec-repair-test/repair_agent"
+REPAIRAGENT_RUN_DIR="$HOME/spec-repair-test/runs/job_${SLURM_JOB_ID}"
+BATCH_ID="${BATCH_ID:-${SLURM_ARRAY_TASK_ID:-0}}"
+
+mkdir -p "$HOME/logs" "$HOME/spec-repair-test/runs"
+
+export REPAIRAGENT_SRC
+export REPAIRAGENT_RUN_DIR
+export REPAIRAGENT_SKIP_DEPS=1
+export PATH="$PATH:$REPAIRAGENT_SRC/defects4j/framework/bin"
+
+cd "$REPAIRAGENT_SRC"
+source venv/bin/activate
+
+yes "" | ./run_isolated_job.sh "experimental_setups/batches/${BATCH_ID}" hyperparams.json deepseek.v3.2

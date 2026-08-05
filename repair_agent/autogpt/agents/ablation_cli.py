@@ -89,6 +89,12 @@ import click
     type=str,
     help="Specify the OpenAI model to use (e.g., gpt-4o-mini).",
 )
+@click.option(
+    "--spec-max-attempts",
+    type=int,
+    default=None,
+    help="Max generate+verify rounds for the behavioral spec (default: hyperparams spec_control.max_attempts).",
+)
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -112,6 +118,7 @@ def main(
     ai_goal: tuple[str],
     experiment_file: str,
     model: Optional[str],
+    spec_max_attempts: Optional[int],
 ) -> None:
     """Run RepairAgent with spec ablation (uses AblationAgent, not the default Agent)."""
     from autogpt.agents.ablation_study import run_ablation_auto_gpt
@@ -139,6 +146,7 @@ def main(
             ai_goals=ai_goal,
             experiment_file=experiment_file,
             model=model,
+            spec_max_attempts=spec_max_attempts,
         )
 
 

@@ -47,7 +47,7 @@ deprecated = ["Cli 6", "Closure 63", "Closure 93", "Collections 1", "Collections
 "Collections 7", "Collections 12", "Collections 17", "Collections 22",
 "Collections 8", "Collections 13", "Collections 18", "Collections 23",
 "Collections 9", "Collections 14", "Collections 19", "Collections 24",
-"Lang 2", "Mockito 21"]
+"Lang 2", "Mockito 21", "JacksonDatabind 65"]
 
 with open("experimental_setups/error_excludes") as eex:
     erronous_ones = eex.read().splitlines()
@@ -63,6 +63,6 @@ def construct_batches_files(dir_to_save, bugs_list, excludes, batch_size=5, batc
     chunks = [filtered_list[i:i+batch_size] for i in range(0, len(filtered_list), batch_size)]
     for i, chunk in enumerate(chunks):
         with open(os.path.join(dir_to_save, str(i + batch_start)), "w") as svfile:
-            svfile.write("\n\n".join(chunk))
+            svfile.write("\n".join(chunk))
 
 construct_batches_files("experimental_setups/batches", bugs_list, set(fixed_so_far+pairs_output+deprecated)-set(erronous_ones))

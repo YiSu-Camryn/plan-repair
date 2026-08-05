@@ -172,6 +172,7 @@ token.txt
 # ──────────────────────────────────────────────
 # RepairAgent runtime / generated files
 # ──────────────────────────────────────────────
+# repair_agent/runs/
 # repair_agent/auto_gpt_workspace/
 # # repair_agent/experimental_setups/
 # repair_agent/logs/

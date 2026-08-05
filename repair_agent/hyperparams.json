@@ -11,5 +11,8 @@
     "stagnation_control": {
         "same_command_repeat_limit": 3,
         "max_consecutive_info_commands": 12
+    },
+    "spec_control": {
+        "max_attempts": 3
     }
 }

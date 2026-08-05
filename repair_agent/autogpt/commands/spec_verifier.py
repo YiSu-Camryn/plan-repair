@@ -75,13 +75,13 @@ def verify_spec(spec_json, source_code_context, buggy_lines_info, test_info,
               feedback_prompt (str or None — for regeneration if rejected)
     """
     if not spec_json or not isinstance(spec_json, dict):
-        logger.info("SPEC-VERIFY: No valid spec to verify, skipping")
-        return {"verdict": "SKIP", "issues": [], "summary": "No spec to verify",
+        logger.info("SPEC-VERIFY: No valid spec to verify")
+        return {"verdict": "ERROR", "issues": [], "summary": "No spec to verify",
                 "feedback_prompt": None}
 
     if spec_json.get("_parse_failed"):
-        logger.info("SPEC-VERIFY: Spec failed to parse, skipping verification")
-        return {"verdict": "SKIP", "issues": [], "summary": "Spec parse failed",
+        logger.info("SPEC-VERIFY: Spec failed to parse")
+        return {"verdict": "ERROR", "issues": [], "summary": "Spec parse failed",
                 "feedback_prompt": None}
 
     # Build the verification prompt
@@ -115,8 +115,7 @@ def verify_spec(spec_json, source_code_context, buggy_lines_info, test_info,
 
     except Exception as e:
         logger.info("SPEC-VERIFY: Verification failed: {}".format(e))
-        # If verification itself fails, accept the spec rather than blocking
-        return {"verdict": "ACCEPT", "issues": [],
+        return {"verdict": "ERROR", "issues": [],
                 "summary": "Verification error: {}".format(e),
                 "feedback_prompt": None}
 
@@ -166,9 +165,9 @@ def _parse_verifier_response(raw_response):
             result = json.loads(raw_response.strip())
 
         # Normalize verdict
-        verdict = result.get("verdict", "ACCEPT").upper().strip()
+        verdict = result.get("verdict", "ERROR").upper().strip()
         if verdict not in ("ACCEPT", "REJECT"):
-            verdict = "ACCEPT"
+            verdict = "ERROR"
 
         return {
             "verdict": verdict,
@@ -177,9 +176,9 @@ def _parse_verifier_response(raw_response):
             "feedback_prompt": None,
         }
     except (json.JSONDecodeError, AttributeError):
-        logger.info("SPEC-VERIFY: Could not parse verifier response, defaulting to ACCEPT")
+        logger.info("SPEC-VERIFY: Could not parse verifier response")
         return {
-            "verdict": "ACCEPT",
+            "verdict": "ERROR",
             "issues": [],
             "summary": "Verifier response unparseable: {}".format(raw_response[:200]),
             "feedback_prompt": None,

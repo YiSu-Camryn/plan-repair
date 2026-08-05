@@ -789,9 +789,25 @@ def _resolve_max_cycles(hyperparams_file: str, max_cycles: int | None) -> int:
     return load_hyperparams(hyperparams_file)["commands_limit"]
 
 
-def run_single_bug(project: str, bug_index: str, model: str, hyperparams_file: str, max_cycles: int | None, temperature: float = 0.0):
+def _resolve_spec_max_attempts(hyperparams_file: str, spec_max_attempts: int | None) -> int:
+    from autogpt.config.hyperparams_loader import load_hyperparams, resolve_spec_max_attempts
+
+    hyperparams = load_hyperparams(hyperparams_file)
+    return resolve_spec_max_attempts(hyperparams, spec_max_attempts)
+
+
+def run_single_bug(
+    project: str,
+    bug_index: str,
+    model: str,
+    hyperparams_file: str,
+    max_cycles: int | None,
+    temperature: float = 0.0,
+    spec_max_attempts: int | None = None,
+):
     """Run RepairAgent on a single bug."""
     max_cycles = _resolve_max_cycles(hyperparams_file, max_cycles)
+    spec_max_attempts = _resolve_spec_max_attempts(hyperparams_file, spec_max_attempts)
 
     prepare_ai_settings(project, bug_index)
     checkout_bug(project, bug_index)
@@ -819,6 +835,7 @@ def run_single_bug(project: str, bug_index: str, model: str, hyperparams_file: s
         install_plugin_deps=False,
         experiment_file=hyperparams_file,
         model=model,
+        spec_max_attempts=spec_max_attempts,
     )
 
 
@@ -903,9 +920,17 @@ def run_in_docker(bugs: list[tuple[str, str]], model: str, hyperparams: str, max
 # Main execution flow
 # ---------------------------------------------------------------------------
 
-def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_cycles: int | None, temperature: float = 0.0):
+def execute_run(
+    bugs: list[tuple[str, str]],
+    model: str,
+    hyperparams: str,
+    max_cycles: int | None,
+    temperature: float = 0.0,
+    spec_max_attempts: int | None = None,
+):
     """Prepare environment and run on all bugs sequentially."""
     max_cycles = _resolve_max_cycles(hyperparams, max_cycles)
+    spec_max_attempts = _resolve_spec_max_attempts(hyperparams, spec_max_attempts)
     setup_defects4j_env()
 
     # Pre-flight: verify Defects4J is available
@@ -926,7 +951,9 @@ def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_c
     for i, (project, bug_index) in enumerate(bugs, 1):
         console.print(Rule(f"[{i}/{len(bugs)}] {project} {bug_index}", style="bold cyan"))
         try:
-            run_single_bug(project, bug_index, model, hyperparams, max_cycles, temperature)
+            run_single_bug(
+                project, bug_index, model, hyperparams, max_cycles, temperature, spec_max_attempts
+            )
             results.append((project, bug_index, "OK"))
             console.print(f"  [green]{project} {bug_index} completed[/green]")
         except SystemExit as e:
@@ -942,6 +969,11 @@ def execute_run(bugs: list[tuple[str, str]], model: str, hyperparams: str, max_c
                 results.append((project, bug_index, "FAILED: stagnation"))
                 console.print(
                     f"  [red]{project} {bug_index} failed: stuck in useless loop[/red]"
+                )
+            elif e.code == 4:
+                results.append((project, bug_index, "FAILED: spec verification"))
+                console.print(
+                    f"  [red]{project} {bug_index} failed: spec pipeline did not verify[/red]"
                 )
             else:
                 raise
@@ -1068,13 +1100,20 @@ def cli(ctx):
 @click.option("--temperature", default=0.0, type=float, help="LLM temperature (0.0–2.0)")
 @click.option("--hyperparams", default=None, help="Hyperparams JSON file path")
 @click.option("--max-cycles", default=None, type=int, help="Max agent cycles per bug (default: hyperparams commands_limit)")
+@click.option(
+    "--spec-max-attempts",
+    default=None,
+    type=int,
+    help="Max generate+verify rounds for spec (default: hyperparams spec_control.max_attempts)",
+)
 @click.option("--docker", is_flag=True, help="Run inside Docker container")
-def run(bugs, bugs_file, model, temperature, hyperparams, max_cycles, docker):
+def run(bugs, bugs_file, model, temperature, hyperparams, max_cycles, spec_max_attempts, docker):
     """Run RepairAgent on one or more bugs."""
     if hyperparams is None:
         hyperparams = str(SCRIPT_DIR / "hyperparams.json")
 
     max_cycles = _resolve_max_cycles(hyperparams, max_cycles)
+    resolved_spec_attempts = _resolve_spec_max_attempts(hyperparams, spec_max_attempts)
 
     # Parse bugs
     if bugs:
@@ -1093,12 +1132,20 @@ def run(bugs, bugs_file, model, temperature, hyperparams, max_cycles, docker):
     console.print(f"  Temperature: [bold]{temperature}[/bold]")
     console.print(f"  Bugs: [bold]{len(bug_list)}[/bold]")
     console.print(f"  Max cycles: [bold]{max_cycles}[/bold]")
+    console.print(f"  Spec max attempts: [bold]{resolved_spec_attempts}[/bold]")
     console.print()
 
     if docker:
         run_in_docker(bug_list, model, hyperparams, max_cycles, temperature)
     else:
-        execute_run(bug_list, model, hyperparams, max_cycles, temperature)
+        execute_run(
+            bug_list,
+            model,
+            hyperparams,
+            max_cycles,
+            temperature,
+            spec_max_attempts=resolved_spec_attempts,
+        )
 
 
 @cli.command()

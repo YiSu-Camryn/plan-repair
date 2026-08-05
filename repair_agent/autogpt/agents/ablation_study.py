@@ -1,13 +1,17 @@
 """Independent ablation study
 
-Five spec injection conditions (``hyperparams_ablation.json`` → ``spec_level``):
+Six spec conditions (``hyperparams_ablation.json`` → ``spec_level``):
 
-- ``none``  (A0): no spec injection — baseline RepairAgent
-- ``short`` (A1): purpose + test_expectation (~100 tokens)
-- ``core``  (A2): short + code_violations + fix_targets (~250 tokens)
-- ``full``  (A3): E34-style — all diagnostic fields (~600 tokens)
-- ``e39``   (A4): full + fix_direction, confidence, ACTION tweaks
+- ``none`` (A0): no spec injection — baseline RepairAgent
+- ``no_javadoc`` (A1): full E39-style spec minus Javadoc-derived fields
+- ``no_failed_tests`` (A2): full spec minus failing-test information
+- ``no_code_analysis`` (A3): full spec minus static code-analysis fields
+- ``no_fix_direction`` (A4): full spec minus fix_direction / ACTION labels
 - ``raw_context`` (A5): raw gathered bug context — no spec LLM, no verification
+
+Each of A1–A4 is a leave-one-out ablation from the full spec pipeline (E39-style
+generation + injection). The complete spec is the default non-ablation path
+(``hyperparams.json`` + standard ``Agent``).
 
 Optional verifier ablation (``use_spec_verifier``):
 
@@ -33,7 +37,6 @@ Batch::
 
 from __future__ import annotations
 
-import json
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator, Optional, TYPE_CHECKING
 
@@ -47,34 +50,46 @@ if TYPE_CHECKING:
 from autogpt.agents.agent import Agent
 
 SPEC_LEVEL_NONE = "none"
-SPEC_LEVEL_SHORT = "short"
-SPEC_LEVEL_CORE = "core"
-SPEC_LEVEL_FULL = "full"
-SPEC_LEVEL_E39 = "e39"
+SPEC_LEVEL_NO_JAVADOC = "no_javadoc"
+SPEC_LEVEL_NO_FAILED_TESTS = "no_failed_tests"
+SPEC_LEVEL_NO_CODE_ANALYSIS = "no_code_analysis"
+SPEC_LEVEL_NO_FIX_DIRECTION = "no_fix_direction"
 SPEC_LEVEL_RAW_CONTEXT = "raw_context"
 
 SPEC_LEVELS = (
     SPEC_LEVEL_NONE,
-    SPEC_LEVEL_SHORT,
-    SPEC_LEVEL_CORE,
-    SPEC_LEVEL_FULL,
-    SPEC_LEVEL_E39,
+    SPEC_LEVEL_NO_JAVADOC,
+    SPEC_LEVEL_NO_FAILED_TESTS,
+    SPEC_LEVEL_NO_CODE_ANALYSIS,
+    SPEC_LEVEL_NO_FIX_DIRECTION,
     SPEC_LEVEL_RAW_CONTEXT,
+)
+
+LEAVE_ONE_OUT_SPEC_LEVELS = (
+    SPEC_LEVEL_NO_JAVADOC,
+    SPEC_LEVEL_NO_FAILED_TESTS,
+    SPEC_LEVEL_NO_CODE_ANALYSIS,
+    SPEC_LEVEL_NO_FIX_DIRECTION,
 )
 
 SPEC_LEVEL_ALIASES = {
     "a0": SPEC_LEVEL_NONE,
-    "a1": SPEC_LEVEL_SHORT,
-    "a2": SPEC_LEVEL_CORE,
-    "a3": SPEC_LEVEL_FULL,
-    "a4": SPEC_LEVEL_E39,
+    "a1": SPEC_LEVEL_NO_JAVADOC,
+    "a2": SPEC_LEVEL_NO_FAILED_TESTS,
+    "a3": SPEC_LEVEL_NO_CODE_ANALYSIS,
+    "a4": SPEC_LEVEL_NO_FIX_DIRECTION,
     "a5": SPEC_LEVEL_RAW_CONTEXT,
     "no_spec": SPEC_LEVEL_NONE,
-    "minimal": SPEC_LEVEL_SHORT,
     "concat": SPEC_LEVEL_RAW_CONTEXT,
+    # Legacy names from the previous short/core/full/e39 ladder
+    "short": SPEC_LEVEL_NO_CODE_ANALYSIS,
+    "core": SPEC_LEVEL_NO_JAVADOC,
+    "full": SPEC_LEVEL_NO_FIX_DIRECTION,
+    "e39": SPEC_LEVEL_NO_JAVADOC,
+    "minimal": SPEC_LEVEL_NO_CODE_ANALYSIS,
 }
 
-DEFAULT_SPEC_LEVEL = SPEC_LEVEL_E39
+DEFAULT_SPEC_LEVEL = SPEC_LEVEL_NO_JAVADOC
 DEFAULT_USE_SPEC_VERIFIER = True
 DEFAULT_USE_SELF_CLARIFICATION = True
 
@@ -96,6 +111,20 @@ _FOOTER_ANTI_OVERFITTING = (
 )
 
 
+def is_leave_one_out_ablation_level(level: str) -> bool:
+    return level in LEAVE_ONE_OUT_SPEC_LEVELS
+
+
+def ablation_flags(level: str) -> dict[str, bool]:
+    """Inclusion flags for the full E39-style spec. False = ablated away."""
+    return {
+        "include_javadoc": level != SPEC_LEVEL_NO_JAVADOC,
+        "include_failed_tests": level != SPEC_LEVEL_NO_FAILED_TESTS,
+        "include_code_analysis": level != SPEC_LEVEL_NO_CODE_ANALYSIS,
+        "include_fix_direction": level != SPEC_LEVEL_NO_FIX_DIRECTION,
+    }
+
+
 def resolve_spec_level(hyperparams: Optional[dict]) -> str:
     """Read and normalize ``spec_level`` from ablation hyperparams."""
     if not hyperparams:
@@ -104,7 +133,14 @@ def resolve_spec_level(hyperparams: Optional[dict]) -> str:
     level = hyperparams.get("spec_level", DEFAULT_SPEC_LEVEL)
     normalized = str(level).lower().strip()
     if normalized in SPEC_LEVEL_ALIASES:
-        return SPEC_LEVEL_ALIASES[normalized]
+        resolved = SPEC_LEVEL_ALIASES[normalized]
+        if normalized in ("short", "core", "full", "e39", "minimal"):
+            logger.warning(
+                "ABLATION: Legacy spec_level {!r} mapped to {!r}".format(
+                    level, resolved
+                )
+            )
+        return resolved
     if normalized in SPEC_LEVELS:
         return normalized
 
@@ -163,6 +199,31 @@ def load_ablation_hyperparams(experiment_file: str) -> dict:
     return load_hyperparams(experiment_file)
 
 
+def sanitize_spec_json_for_ablation(
+    spec_json: Optional[dict],
+    level: str,
+) -> Optional[dict]:
+    """Drop ablated fields from parsed spec JSON before prompt formatting."""
+    if not spec_json or not isinstance(spec_json, dict):
+        return spec_json
+    if not is_leave_one_out_ablation_level(level):
+        return spec_json
+
+    flags = ablation_flags(level)
+    sanitized = dict(spec_json)
+    if not flags["include_javadoc"]:
+        sanitized.pop("javadoc_key_rules", None)
+    if not flags["include_failed_tests"]:
+        sanitized.pop("test_expectation", None)
+    if not flags["include_code_analysis"]:
+        sanitized.pop("code_violations", None)
+        sanitized.pop("fix_targets", None)
+        sanitized.pop("fix_target_line", None)
+    if not flags["include_fix_direction"]:
+        sanitized.pop("fix_direction", None)
+    return sanitized
+
+
 def format_spec_for_prompt_by_level(
     spec_json: Optional[dict],
     raw_text: str,
@@ -175,40 +236,44 @@ def format_spec_for_prompt_by_level(
     if not spec_json or not isinstance(spec_json, dict):
         return SPEC_HEADER + str(raw_text)[:2000]
 
+    spec_json = sanitize_spec_json_for_ablation(spec_json, level)
+    flags = ablation_flags(level) if is_leave_one_out_ablation_level(level) else {
+        "include_javadoc": True,
+        "include_failed_tests": True,
+        "include_code_analysis": True,
+        "include_fix_direction": True,
+    }
+
     parts = [SPEC_HEADER]
 
     if spec_json.get("purpose"):
         parts.append("**Purpose:** {}\n".format(spec_json["purpose"]))
 
-    if level in (SPEC_LEVEL_FULL, SPEC_LEVEL_E39) and spec_json.get("javadoc_key_rules"):
+    if flags["include_javadoc"] and spec_json.get("javadoc_key_rules"):
         parts.append("**Javadoc Rules:**")
         for i, rule in enumerate(spec_json["javadoc_key_rules"], 1):
             parts.append("  {}. {}".format(i, rule))
         parts.append("")
 
-    if level in (SPEC_LEVEL_CORE, SPEC_LEVEL_FULL, SPEC_LEVEL_E39) and spec_json.get(
-        "code_violations"
-    ):
+    if flags["include_code_analysis"] and spec_json.get("code_violations"):
         parts.append("**Code Violations (what's wrong):**")
         for i, violation in enumerate(spec_json["code_violations"], 1):
             parts.append("  {}. {}".format(i, violation))
         parts.append("")
 
-    if spec_json.get("test_expectation"):
+    if flags["include_failed_tests"] and spec_json.get("test_expectation"):
         parts.append("**What the tests expect:** {}\n".format(spec_json["test_expectation"]))
 
-    if level in (SPEC_LEVEL_FULL, SPEC_LEVEL_E39) and spec_json.get("rules"):
+    if spec_json.get("rules"):
         parts.append("**Behavioral rules the correct implementation must satisfy:**")
         for i, rule in enumerate(spec_json["rules"], 1):
             parts.append("  {}. {}".format(i, rule))
         parts.append("")
 
-    if level in (SPEC_LEVEL_FULL, SPEC_LEVEL_E39) and spec_json.get("fix_target_line"):
+    if flags["include_code_analysis"] and spec_json.get("fix_target_line"):
         parts.append("**Fix target line:** {}\n".format(spec_json["fix_target_line"]))
 
-    if level in (SPEC_LEVEL_CORE, SPEC_LEVEL_FULL, SPEC_LEVEL_E39) and spec_json.get(
-        "fix_targets"
-    ):
+    if flags["include_code_analysis"] and spec_json.get("fix_targets"):
         parts.append("**Fix targets:**")
         for i, target in enumerate(spec_json["fix_targets"], 1):
             parts.append(
@@ -218,7 +283,7 @@ def format_spec_for_prompt_by_level(
             )
         parts.append("")
 
-    if level == SPEC_LEVEL_E39 and spec_json.get("fix_direction"):
+    if flags["include_fix_direction"] and spec_json.get("fix_direction"):
         parts.append("**Fix direction:** {}\n".format(spec_json["fix_direction"]))
         if spec_json["fix_direction"] == "DELETE_CODE":
             parts.append(
@@ -232,19 +297,18 @@ def format_spec_for_prompt_by_level(
                 "unnecessary guards, branches, or logic rather than adding new code.\n"
             )
 
-    if level == SPEC_LEVEL_E39 and spec_json.get("confidence"):
+    if spec_json.get("confidence"):
         parts.append("**Diagnosis confidence:** {}\n".format(spec_json["confidence"]))
 
-    if level == SPEC_LEVEL_E39 and spec_json.get("developer_clarification"):
+    if spec_json.get("developer_clarification"):
         parts.append(
             "**Developer clarification:** {}\n".format(spec_json["developer_clarification"])
         )
 
-    if level in (SPEC_LEVEL_FULL, SPEC_LEVEL_E39):
-        parts.append(_FOOTER_IMPORTANT)
-        parts.append(_FOOTER_CRITICAL)
+    parts.append(_FOOTER_IMPORTANT)
+    parts.append(_FOOTER_CRITICAL)
 
-    if level == SPEC_LEVEL_E39:
+    if flags["include_failed_tests"]:
         parts.append(_FOOTER_ANTI_OVERFITTING)
 
     return "\n".join(parts)
@@ -265,6 +329,14 @@ def _make_patched_generate_spec(
                 "spec_json": None,
                 "prompt_section": "",
                 "error": None,
+                "failure_reason": None,
+                "attempts_used": 0,
+                "attempts": [],
+                "max_attempts": _kwargs.get("max_attempts"),
+                "project_name": _args[0] if _args else _kwargs.get("project_name"),
+                "bug_index": _args[1] if len(_args) > 1 else _kwargs.get("bug_index"),
+                "spec_final_verdict": "SKIPPED",
+                "spec_verifier_summary": "spec_level=none",
             }
 
         return skip_generate_spec
@@ -289,13 +361,15 @@ def _make_patched_generate_spec(
     def ablation_generate_spec(*args, **kwargs) -> dict:
         kwargs["use_spec_verifier"] = use_spec_verifier
         kwargs["use_self_clarification"] = use_self_clarification
+        kwargs["spec_ablation_level"] = level
         result = original(*args, **kwargs)
         if not result.get("success"):
             return result
 
         project_name = args[0] if args else kwargs.get("project_name")
         bug_index = args[1] if len(args) > 1 else kwargs.get("bug_index")
-        spec_json = result.get("spec_json")
+        spec_json = sanitize_spec_json_for_ablation(result.get("spec_json"), level)
+        result["spec_json"] = spec_json
         raw_text = result.get("prompt_section") or ""
         prompt_section = format_spec_for_prompt_by_level(spec_json, raw_text, level)
         result["prompt_section"] = prompt_section
@@ -349,6 +423,7 @@ class AblationAgent(Agent):
         config: Config,
         cycle_budget: Optional[int] = None,
         experiment_file: str = None,
+        spec_max_attempts: Optional[int] = None,
     ):
         hyperparams = load_ablation_hyperparams(experiment_file)
         self.spec_level = resolve_spec_level(hyperparams)
@@ -373,6 +448,7 @@ class AblationAgent(Agent):
                 config=config,
                 cycle_budget=cycle_budget,
                 experiment_file=experiment_file,
+                spec_max_attempts=spec_max_attempts,
             )
 
         if "spec_section" in self.prompt_dictionary:

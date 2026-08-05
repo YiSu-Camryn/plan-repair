@@ -938,6 +938,76 @@ def build_spec_prompt(project_name, bug_index, buggy_lines_info, javadoc,
     return "\n".join(sections)
 
 
+def _full_spec_ablation_flags() -> dict:
+    return {
+        "include_javadoc": True,
+        "include_failed_tests": True,
+        "include_code_analysis": True,
+        "include_fix_direction": True,
+    }
+
+
+def _resolve_spec_ablation_flags(spec_ablation_level=None) -> dict:
+    if not spec_ablation_level:
+        return _full_spec_ablation_flags()
+    from autogpt.agents.ablation_study import ablation_flags, is_leave_one_out_ablation_level
+
+    if not is_leave_one_out_ablation_level(spec_ablation_level):
+        return _full_spec_ablation_flags()
+    return ablation_flags(spec_ablation_level)
+
+
+def _apply_spec_ablation_to_context(ctx: dict, flags: dict) -> dict:
+    """Remove ablated inputs before the spec LLM call."""
+    ctx = dict(ctx)
+    if not flags["include_javadoc"]:
+        ctx["javadoc"] = ""
+    if not flags["include_failed_tests"]:
+        ctx["test_failure"] = ""
+        ctx["test_source"] = ""
+        ctx["runtime_test_failure"] = ""
+        ctx["trigger_tests_content"] = ""
+    if not flags["include_code_analysis"]:
+        ctx["method_body"] = ""
+        ctx["code_window"] = ""
+        ctx["extra_methods"] = None
+        ctx["sibling_methods"] = ""
+        ctx["peer_methods"] = ""
+        ctx["class_header"] = ""
+    return ctx
+
+
+def _spec_system_prompt_for_ablation(flags: dict) -> str:
+    """Full spec system prompt with leave-one-out ablation instructions appended."""
+    addendum_parts = []
+    if not flags["include_javadoc"]:
+        addendum_parts.append(
+            "ABLATION: No Javadoc was provided. Do not infer Javadoc rules. "
+            "Omit `javadoc_key_rules` from the JSON output (use an empty list)."
+        )
+    if not flags["include_failed_tests"]:
+        addendum_parts.append(
+            "ABLATION: No failing-test output or test source was provided. "
+            "Omit `test_expectation` from the JSON output."
+        )
+    if not flags["include_code_analysis"]:
+        addendum_parts.append(
+            "ABLATION: No method body, code window, or peer/sibling methods were provided. "
+            "Do not perform line-level code analysis. Omit `code_violations`, "
+            "`fix_targets`, and `fix_target_line` from the JSON output."
+        )
+    if not flags["include_fix_direction"]:
+        addendum_parts.append(
+            "ABLATION: Do not classify the repair strategy. "
+            "Omit `fix_direction` from the JSON output entirely."
+        )
+    if not addendum_parts:
+        return SPEC_SYSTEM_PROMPT
+    return SPEC_SYSTEM_PROMPT + "\n\n## Ablation Constraints\n" + "\n".join(
+        "- {}".format(part) for part in addendum_parts
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────
 # 3. Main Entry Point
 # ─────────────────────────────────────────────────────────────────────
@@ -1111,27 +1181,99 @@ def generate_raw_context_injection(project_name, bug_index, localization_info, t
         err_msg = "{}\n{}".format(e, traceback.format_exc())
         logger.info("SPEC-RAW: Failed: {}".format(err_msg))
         _save_spec_log(project_name, bug_index, "error", err_msg)
-        return {"success": False, "spec_json": None, "prompt_section": "", "error": str(e)}
+        return _spec_failure_result(
+            project_name, bug_index, "EXCEPTION", str(e),
+            0, [], 1,
+        )
+
+
+def _parse_spec_json(raw_response):
+    """Parse spec JSON from an LLM response."""
+    if not raw_response:
+        return None
+    try:
+        json_match = re.search(r"```(?:json)?\s*(.*?)```", raw_response, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(1).strip())
+        return json.loads(raw_response.strip())
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        return None
+
+
+PARSE_RETRY_FEEDBACK = (
+    "\n## IMPORTANT: Your previous response was not valid JSON. "
+    "Return ONLY valid JSON matching the required spec schema.\n"
+)
+
+
+def _spec_failure_result(
+    project_name,
+    bug_index,
+    failure_reason,
+    error,
+    attempts_used,
+    attempts,
+    max_attempts,
+):
+    return {
+        "success": False,
+        "spec_json": None,
+        "prompt_section": "",
+        "error": error,
+        "failure_reason": failure_reason,
+        "attempts_used": attempts_used,
+        "attempts": attempts,
+        "max_attempts": max_attempts,
+        "project_name": project_name,
+        "bug_index": bug_index,
+    }
+
+
+def _feedback_for_attempt_failure(verify_result=None, parse_failed=False):
+    if parse_failed:
+        return PARSE_RETRY_FEEDBACK
+    if verify_result and verify_result.get("feedback_prompt"):
+        return verify_result["feedback_prompt"]
+    summary = (verify_result or {}).get("summary") or "Verification failed."
+    return (
+        "\n## IMPORTANT: Previous spec attempt failed verification.\n"
+        "{}\n".format(summary)
+    )
 
 
 def generate_spec(project_name, bug_index, localization_info, test_results,
                   model="gpt-4o-mini", workspace="auto_gpt_workspace",
-                  use_spec_verifier=True, use_self_clarification=True):
+                  use_spec_verifier=True, use_self_clarification=True,
+                  spec_ablation_level=None, max_attempts=3):
     """Generate a behavioral specification for the given bug.
 
     Called from base.py __init__ at agent startup.
 
-    ``use_spec_verifier``: when False, skip Phase 4b (``verify_spec`` and retry).
+    ``use_spec_verifier``: when False, skip verification (ablation).
     ``use_self_clarification``: when False, skip Phase 4c (LOW-confidence Q&A).
+    ``spec_ablation_level``: leave-one-out ablation level from ``ablation_study``.
+    ``max_attempts``: generate+verify rounds; only ACCEPT proceeds to repair.
     """
-    logger.info("SPEC-GEN: Generating spec for {}-{}".format(project_name, bug_index))
+    logger.info(
+        "SPEC-GEN: Generating spec for {}-{} (max_attempts={})".format(
+            project_name, bug_index, max_attempts
+        )
+    )
+    attempts_log = []
 
     try:
+        ablation_flags = _resolve_spec_ablation_flags(spec_ablation_level)
         ctx = gather_spec_context(
             project_name, bug_index, test_results, workspace,
             localization_info=localization_info,
         )
-        gathered_meta = {**ctx["gathered_meta"], "model": model}
+        ctx = _apply_spec_ablation_to_context(ctx, ablation_flags)
+        gathered_meta = {
+            **ctx["gathered_meta"],
+            "model": model,
+            "spec_ablation_level": spec_ablation_level,
+            "max_attempts": max_attempts,
+        }
         _save_spec_log(project_name, bug_index, "gathered_info_json", gathered_meta)
 
         user_prompt = build_spec_prompt(
@@ -1153,48 +1295,153 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
             runtime_test_failure=ctx["runtime_test_failure"],
         )
 
-        # ── LOG: full prompt ──
+        system_prompt = _spec_system_prompt_for_ablation(ablation_flags)
+
         full_prompt_log = "=== SYSTEM PROMPT ===\n{}\n\n=== USER PROMPT ===\n{}".format(
-            SPEC_SYSTEM_PROMPT, user_prompt)
+            system_prompt, user_prompt)
         _save_spec_log(project_name, bug_index, "input_prompt", full_prompt_log)
 
-        # ── Phase 3: Call LLM ──
         from autogpt.llm.chat_model import get_langchain_chat_model
         from langchain.schema.messages import HumanMessage, SystemMessage
 
         chat = get_langchain_chat_model(model)
-        messages = [
-            SystemMessage(content=SPEC_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ]
-        response = chat.invoke(messages)
-        raw_response = response.content
+        verify_context = ctx["method_body"] if ctx["method_body"] else ctx["code_window"]
 
-        logger.info("SPEC-GEN: LLM returned {} chars".format(len(raw_response)))
-        _save_spec_log(project_name, bug_index, "raw_response", raw_response)
+        def _finalize_success(
+            spec_json,
+            raw_response,
+            attempts_used,
+            spec_final_verdict="ACCEPT",
+            spec_verifier_summary=None,
+        ):
+            if (
+                use_self_clarification
+                and spec_json
+                and spec_json.get("confidence") == "LOW"
+                and spec_json.get("clarifying_question")
+            ):
+                logger.info("SPEC-GEN: Low confidence — self-clarifying: {}".format(
+                    spec_json["clarifying_question"]))
+                answer = _answer_clarifying_question(
+                    spec_json["clarifying_question"],
+                    ctx["test_source"], ctx["test_failure"], ctx["method_body"], model,
+                )
+                if answer:
+                    logger.info("SPEC-GEN: Self-clarification answer: {}".format(answer[:200]))
+                    _save_spec_log(
+                        project_name, bug_index, "clarification",
+                        {"question": spec_json["clarifying_question"], "answer": answer},
+                    )
+                    spec_json["developer_clarification"] = "Q: {} A: {}".format(
+                        spec_json["clarifying_question"], answer)
+                else:
+                    logger.info("SPEC-GEN: Self-clarification returned UNKNOWN, skipping")
+            elif (
+                not use_self_clarification
+                and spec_json
+                and spec_json.get("confidence") == "LOW"
+                and spec_json.get("clarifying_question")
+            ):
+                logger.info("SPEC-GEN: Self-clarification disabled — skipping")
+                _save_spec_log(
+                    project_name, bug_index, "clarification",
+                    {"skipped": True, "reason": "use_self_clarification=false"},
+                )
 
-        # ── Phase 4: Parse JSON ──
+            prompt_section = format_spec_for_prompt(spec_json, raw_response)
+            _save_spec_log(project_name, bug_index, "injected_prompt", prompt_section)
+            logger.info("SPEC-GEN: Success. Prompt section: {} chars".format(len(prompt_section)))
+            return {
+                "success": True,
+                "spec_json": spec_json,
+                "prompt_section": prompt_section,
+                "error": None,
+                "failure_reason": None,
+                "attempts_used": attempts_used,
+                "attempts": attempts_log,
+                "max_attempts": max_attempts,
+                "project_name": project_name,
+                "bug_index": bug_index,
+                "spec_final_verdict": spec_final_verdict,
+                "spec_verifier_summary": spec_verifier_summary,
+            }
+
+        if not use_spec_verifier:
+            logger.info("SPEC-GEN: Spec verifier disabled — skipping verification")
+            _save_spec_log(
+                project_name, bug_index, "verify_result_json",
+                {"verdict": "SKIPPED", "reason": "use_spec_verifier=false"},
+            )
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = chat.invoke(messages)
+            raw_response = response.content
+            _save_spec_log(project_name, bug_index, "raw_response", raw_response)
+            spec_json = _parse_spec_json(raw_response)
+            if spec_json and spec_ablation_level:
+                from autogpt.agents.ablation_study import sanitize_spec_json_for_ablation
+                spec_json = sanitize_spec_json_for_ablation(spec_json, spec_ablation_level)
+            if spec_json:
+                _save_spec_log(project_name, bug_index, "parsed_json", spec_json)
+                return _finalize_success(
+                    spec_json, raw_response, 1,
+                    spec_final_verdict="SKIPPED",
+                    spec_verifier_summary="use_spec_verifier=false",
+                )
+            return _spec_failure_result(
+                project_name, bug_index, "PARSE_FAILED",
+                "Could not parse spec JSON (verifier disabled).",
+                1, attempts_log, max_attempts,
+            )
+
+        current_user_prompt = user_prompt
         spec_json = None
-        try:
-            json_match = re.search(r"```(?:json)?\s*(.*?)```", raw_response, re.DOTALL)
-            if json_match:
-                spec_json = json.loads(json_match.group(1).strip())
+        raw_response = ""
+
+        for attempt in range(1, max_attempts + 1):
+            logger.info("SPEC-GEN: Attempt {}/{}".format(attempt, max_attempts))
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=current_user_prompt),
+            ]
+            response = chat.invoke(messages)
+            raw_response = response.content
+            _save_spec_log(
+                project_name, bug_index, "attempt_{}_raw".format(attempt), raw_response,
+            )
+
+            spec_json = _parse_spec_json(raw_response)
+            if spec_json and spec_ablation_level:
+                from autogpt.agents.ablation_study import sanitize_spec_json_for_ablation
+                spec_json = sanitize_spec_json_for_ablation(spec_json, spec_ablation_level)
+
+            if spec_json:
+                _save_spec_log(
+                    project_name, bug_index, "attempt_{}_parsed".format(attempt), spec_json,
+                )
             else:
-                spec_json = json.loads(raw_response.strip())
-        except json.JSONDecodeError:
-            logger.info("SPEC-GEN: Could not parse JSON, using raw text")
+                _save_spec_log(
+                    project_name, bug_index, "attempt_{}_parsed".format(attempt),
+                    {"_parse_failed": True, "_raw_preview": raw_response[:500]},
+                )
+                attempts_log.append({
+                    "attempt": attempt,
+                    "stage": "parse",
+                    "verdict": "PARSE_FAILED",
+                })
+                if attempt < max_attempts:
+                    current_user_prompt = user_prompt + PARSE_RETRY_FEEDBACK
+                    continue
+                return _spec_failure_result(
+                    project_name, bug_index, "PARSE_FAILED",
+                    "Could not parse spec JSON after {} attempts.".format(max_attempts),
+                    attempt, attempts_log, max_attempts,
+                )
 
-        if spec_json:
-            _save_spec_log(project_name, bug_index, "parsed_json", spec_json)
-        else:
-            _save_spec_log(project_name, bug_index, "parsed_json",
-                           {"_parse_failed": True, "_raw_preview": raw_response[:500]})
-
-        # ── Phase 4b: Verify spec ──
-        if use_spec_verifier:
             from autogpt.commands.spec_verifier import verify_spec
 
-            verify_context = ctx["method_body"] if ctx["method_body"] else ctx["code_window"]
             verify_result = verify_spec(
                 spec_json=spec_json,
                 source_code_context=verify_context,
@@ -1202,104 +1449,61 @@ def generate_spec(project_name, bug_index, localization_info, test_results,
                 test_info=ctx["test_failure"],
                 model=model,
             )
-            _save_spec_log(project_name, bug_index, "verify_result_json", verify_result)
-            logger.info("SPEC-GEN: Verification verdict: {}".format(verify_result["verdict"]))
-
-            if verify_result["verdict"] == "REJECT" and verify_result.get("feedback_prompt"):
-                logger.info("SPEC-GEN: Spec REJECTED, regenerating with feedback...")
-
-                # Rebuild prompt with verifier feedback appended
-                retry_prompt = user_prompt + "\n" + verify_result["feedback_prompt"]
-                _save_spec_log(project_name, bug_index, "retry_prompt", retry_prompt)
-
-                retry_messages = [
-                    SystemMessage(content=SPEC_SYSTEM_PROMPT),
-                    HumanMessage(content=retry_prompt),
-                ]
-                retry_response = chat.invoke(retry_messages)
-                raw_response_v2 = retry_response.content
-
-                logger.info("SPEC-GEN: Retry LLM returned {} chars".format(len(raw_response_v2)))
-                _save_spec_log(project_name, bug_index, "retry_raw_response", raw_response_v2)
-
-                # Parse the retry response
-                spec_json_v2 = None
-                try:
-                    json_match_v2 = re.search(r"```(?:json)?\s*(.*?)```", raw_response_v2, re.DOTALL)
-                    if json_match_v2:
-                        spec_json_v2 = json.loads(json_match_v2.group(1).strip())
-                    else:
-                        spec_json_v2 = json.loads(raw_response_v2.strip())
-                except json.JSONDecodeError:
-                    logger.info("SPEC-GEN: Retry JSON parse failed, keeping original spec")
-
-                if spec_json_v2:
-                    _save_spec_log(project_name, bug_index, "retry_parsed_json", spec_json_v2)
-                    spec_json = spec_json_v2
-                    raw_response = raw_response_v2
-                    logger.info("SPEC-GEN: Using revised spec after verification feedback")
-                else:
-                    logger.info("SPEC-GEN: Retry parse failed, using original spec")
-        else:
-            logger.info("SPEC-GEN: Spec verifier disabled — skipping verification")
             _save_spec_log(
-                project_name,
-                bug_index,
-                "verify_result_json",
-                {"verdict": "SKIPPED", "reason": "use_spec_verifier=false"},
+                project_name, bug_index, "attempt_{}_verify".format(attempt), verify_result,
+            )
+            logger.info(
+                "SPEC-GEN: Attempt {} verification verdict: {}".format(
+                    attempt, verify_result["verdict"]
+                )
             )
 
-        # ── Phase 4c: Self-clarification for LOW confidence specs ──
-        if (
-            use_self_clarification
-            and spec_json
-            and spec_json.get("confidence") == "LOW"
-            and spec_json.get("clarifying_question")
-        ):
-            logger.info("SPEC-GEN: Low confidence — self-clarifying: {}".format(
-                spec_json["clarifying_question"]))
+            if verify_result["verdict"] == "ACCEPT":
+                attempts_log.append({
+                    "attempt": attempt,
+                    "stage": "verify",
+                    "verdict": "ACCEPT",
+                })
+                return _finalize_success(
+                    spec_json,
+                    raw_response,
+                    attempt,
+                    spec_final_verdict="ACCEPT",
+                    spec_verifier_summary=verify_result.get("summary"),
+                )
 
-            answer = _answer_clarifying_question(
-                spec_json["clarifying_question"],
-                ctx["test_source"], ctx["test_failure"], ctx["method_body"], model,
+            attempts_log.append({
+                "attempt": attempt,
+                "stage": "verify",
+                "verdict": verify_result["verdict"],
+                "summary": verify_result.get("summary"),
+            })
+            if attempt < max_attempts:
+                current_user_prompt = user_prompt + _feedback_for_attempt_failure(
+                    verify_result=verify_result,
+                )
+                continue
+
+            failure_reason = (
+                "EXHAUSTED_REJECTS"
+                if verify_result["verdict"] == "REJECT"
+                else "VERIFICATION_FAILED"
             )
-
-            if answer:
-                logger.info("SPEC-GEN: Self-clarification answer: {}".format(answer[:200]))
-                _save_spec_log(project_name, bug_index, "clarification",
-                               {"question": spec_json["clarifying_question"],
-                                "answer": answer})
-                spec_json["developer_clarification"] = "Q: {} A: {}".format(
-                    spec_json["clarifying_question"], answer)
-            else:
-                logger.info("SPEC-GEN: Self-clarification returned UNKNOWN, skipping")
-        elif (
-            not use_self_clarification
-            and spec_json
-            and spec_json.get("confidence") == "LOW"
-            and spec_json.get("clarifying_question")
-        ):
-            logger.info("SPEC-GEN: Self-clarification disabled — skipping")
-            _save_spec_log(
-                project_name,
-                bug_index,
-                "clarification",
-                {"skipped": True, "reason": "use_self_clarification=false"},
+            return _spec_failure_result(
+                project_name, bug_index, failure_reason,
+                "Spec verification did not ACCEPT after {} attempts.".format(max_attempts),
+                attempt, attempts_log, max_attempts,
             )
-
-        # ── Phase 5: Format for prompt injection ──
-        prompt_section = format_spec_for_prompt(spec_json, raw_response)
-        _save_spec_log(project_name, bug_index, "injected_prompt", prompt_section)
-
-        logger.info("SPEC-GEN: Success. Prompt section: {} chars".format(len(prompt_section)))
-        return {"success": True, "spec_json": spec_json, "prompt_section": prompt_section, "error": None}
 
     except Exception as e:
         import traceback
         err_msg = "{}\n{}".format(e, traceback.format_exc())
         logger.info("SPEC-GEN: Failed: {}".format(err_msg))
         _save_spec_log(project_name, bug_index, "error", err_msg)
-        return {"success": False, "spec_json": None, "prompt_section": "", "error": str(e)}
+        return _spec_failure_result(
+            project_name, bug_index, "EXCEPTION", str(e),
+            len(attempts_log), attempts_log, max_attempts,
+        )
 
 
 def format_spec_for_prompt(spec_json, raw_text):

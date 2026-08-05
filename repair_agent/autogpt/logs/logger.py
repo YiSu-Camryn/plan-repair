@@ -150,6 +150,15 @@ class Logger(metaclass=Singleton):
     ) -> None:
         self._log(title, title_color, message, logging.WARN)
 
+    def warning(
+        self,
+        message: str,
+        title: str = "",
+        title_color: str = "",
+    ) -> None:
+        """Alias for ``warn`` (matches stdlib logging API)."""
+        self.warn(message, title=title, title_color=title_color)
+
     def error(self, title: str, message: str = "") -> None:
         self._log(title, Fore.RED, message, logging.ERROR)
 

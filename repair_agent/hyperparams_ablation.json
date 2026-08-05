@@ -12,7 +12,10 @@
         "same_command_repeat_limit": 3,
         "max_consecutive_info_commands": 12
     },
-    "spec_level": "e39",
+    "spec_level": "no_javadoc",
     "use_spec_verifier": true,
-    "use_self_clarification": true
+    "use_self_clarification": true,
+    "spec_control": {
+        "max_attempts": 3
+    }
 }

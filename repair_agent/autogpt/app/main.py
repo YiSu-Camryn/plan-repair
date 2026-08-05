@@ -27,6 +27,7 @@ from autogpt.app.utils import (
 )
 from autogpt.commands import COMMAND_CATEGORIES
 from autogpt.config import AIConfig, Config, ConfigBuilder, check_openai_api_key
+from autogpt.config.hyperparams_loader import EXIT_SPEC_FAILED
 from autogpt.experiment_metrics import record_bug_run_metrics
 from autogpt.llm.api_manager import ApiManager
 from autogpt.logs import logger
@@ -36,6 +37,15 @@ from autogpt.plugins import scan_plugins
 from autogpt.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
 from autogpt.speech import say_text
 from autogpt.workspace import Workspace
+from autogpt.spec_failure_recorder import (
+    SpecPipelineError,
+    log_spec_failure_banner,
+    record_spec_failure,
+)
+from autogpt.bug_results_recorder import (
+    record_bug_result_from_agent,
+    record_bug_result_spec_failed,
+)
 from scripts.install_plugin_deps import install_plugin_dependencies
 
 
@@ -61,6 +71,7 @@ def run_auto_gpt(
     ai_goals: tuple[str] = tuple(),
     experiment_file: str = None,
     model: Optional[str] = None,
+    spec_max_attempts: Optional[int] = None,
 ):
     if not experiment_file:
         raise ValueError("Cannot proceed without experiment file")
@@ -173,20 +184,42 @@ def run_auto_gpt(
     )
     logger.typewriter_log("Using Browser:", Fore.GREEN, config.selenium_web_browser)
 
-    agent = Agent(
-        memory=memory,
-        command_registry=command_registry,
-        triggering_prompt=DEFAULT_TRIGGERING_PROMPT,
-        ai_config=ai_config,
-        config=config,
-        experiment_file = experiment_file
-    )
+    from autogpt.bug_results_recorder import _utc_now
 
-    run_started_at = time.monotonic()
+    bug_run_started_at = _utc_now()
+    run_started_mono = time.monotonic()
+
+    try:
+        agent = Agent(
+            memory=memory,
+            command_registry=command_registry,
+            triggering_prompt=DEFAULT_TRIGGERING_PROMPT,
+            ai_config=ai_config,
+            config=config,
+            experiment_file=experiment_file,
+            spec_max_attempts=spec_max_attempts,
+        )
+        agent.bug_run_started_at = bug_run_started_at
+    except SpecPipelineError as exc:
+        result = exc.result
+        project_name = result.get("project_name", "unknown")
+        bug_index = result.get("bug_index", "unknown")
+        detail_path = record_spec_failure(project_name, bug_index, result)
+        log_spec_failure_banner(project_name, bug_index, result, detail_path)
+        record_bug_result_spec_failed(
+            spec_result=result,
+            model=config.smart_llm,
+            elapsed_seconds=time.monotonic() - run_started_mono,
+            started_at=bug_run_started_at,
+        )
+        sys.exit(EXIT_SPEC_FAILED)
+
     try:
         run_interaction_loop(agent)
     finally:
-        record_bug_run_metrics(agent, time.monotonic() - run_started_at)
+        elapsed = time.monotonic() - run_started_mono
+        record_bug_run_metrics(agent, elapsed)
+        record_bug_result_from_agent(agent, elapsed)
 
 
 def _get_cycle_budget(continuous_mode: bool, continuous_limit: int) -> int | None:
