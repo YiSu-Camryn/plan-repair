@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Iterator<Chromosome> iterator() {\n    return new Iterator<Chromosome>() {\n        private final Iterator<Chromosome> wrapped = chromosomes.iterator();\n\n        @Override\n        public boolean hasNext() {\n            return wrapped.hasNext();\n        }\n\n        @Override\n        public Chromosome next() {\n            return wrapped.next();\n        }\n\n        @Override\n        public void remove() {\n            throw new UnsupportedOperationException(\"remove\");\n        }\n    };\n}",
+    "bug_name": "Math-34"
+  }
+]

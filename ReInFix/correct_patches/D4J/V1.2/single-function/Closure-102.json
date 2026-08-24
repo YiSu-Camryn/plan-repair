@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void process(Node externs, Node root) {\n  NodeTraversal.traverse(compiler, root, this);\n  removeDuplicateDeclarations(root); // Moved this call before MAKE_LOCAL_NAMES_UNIQUE check\n  if (MAKE_LOCAL_NAMES_UNIQUE) {\n    MakeDeclaredNamesUnique renamer = new MakeDeclaredNamesUnique();\n    NodeTraversal t = new NodeTraversal(compiler, renamer);\n    t.traverseRoots(externs, root);\n  }\n  new PropogateConstantAnnotations(compiler, assertOnChange)\n      .process(externs, root);\n}",
+    "bug_name": "Closure-102"
+  }
+]

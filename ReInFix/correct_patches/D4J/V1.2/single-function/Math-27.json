@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public double percentageValue() {\n    BigFraction bigFraction = new BigFraction(numerator, denominator);\n    return bigFraction.multiply(100).doubleValue();\n}",
+    "bug_name": "Math-27"
+  }
+]

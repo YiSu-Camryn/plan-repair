@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "@Override\npublic void skipValue() throws IOException {\n  if (peek() == JsonToken.NAME) {\n    nextName();\n    pathNames[stackSize - 2] = \"null\";\n  } else {\n    popStack();\n    int index = stackSize - 1;\n    if (index >= 0) {\n      pathNames[index] = \"null\"; // fixed\n      pathIndices[index]++; // fixed\n    }\n  }\n}",
+    "bug_name": "Gson-12"
+  }
+]

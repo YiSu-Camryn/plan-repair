@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void captureArgumentsFrom(Invocation i) {\n    int k = 0;\n    Object[] arguments = i.getArguments();\n    for (Matcher m : matchers) {\n        if (m instanceof CapturesArguments) {\n            if (k < arguments.length) {\n                ((CapturesArguments) m).captureFrom(arguments[k]);\n            }\n        }\n        k++;\n    }\n}",
+    "bug_name": "Mockito-34"
+  }
+]

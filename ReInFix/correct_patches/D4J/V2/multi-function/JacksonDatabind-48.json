@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "@Override\npublic VisibilityChecker<?> getDefaultVisibilityChecker()\n{\n    VisibilityChecker<?> vchecker = super.getDefaultVisibilityChecker();\n    if (!isEnabled(MapperFeature.AUTO_DETECT_SETTERS)) {\n        vchecker = vchecker.withSetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_CREATORS)) {\n        vchecker = vchecker.withCreatorVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_GETTERS)) {\n        vchecker = vchecker.withGetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_IS_GETTERS)) {\n        vchecker = vchecker.withIsGetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_FIELDS)) {\n        vchecker = vchecker.withFieldVisibility(Visibility.NONE);\n    }\n    return vchecker;\n}",
+      "2": "@Override\npublic VisibilityChecker<?> getDefaultVisibilityChecker()\n{\n    VisibilityChecker<?> vchecker = super.getDefaultVisibilityChecker();\n    if (!isEnabled(MapperFeature.AUTO_DETECT_GETTERS)) {\n        vchecker = vchecker.withGetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_IS_GETTERS)) {\n        vchecker = vchecker.withIsGetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_SETTERS)) {\n        vchecker = vchecker.withSetterVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_CREATORS)) {\n        vchecker = vchecker.withCreatorVisibility(Visibility.NONE);\n    }\n    if (!isEnabled(MapperFeature.AUTO_DETECT_FIELDS)) {\n        vchecker = vchecker.withFieldVisibility(Visibility.NONE);\n    }\n    return vchecker;\n}"
+    },
+    "bug_name": "JacksonDatabind-48"
+  }
+]

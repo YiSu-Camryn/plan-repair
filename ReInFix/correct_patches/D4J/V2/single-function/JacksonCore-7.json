@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public int writeValue() {\n    // Most likely, object:\n    if (_type == TYPE_OBJECT) {\n        // Ensure proper context for field names\n        if (_gotName) {\n            _gotName = false;\n        } else {\n            // Handle the case where a field name is expected but not provided\n            return STATUS_EXPECT_NAME;\n        }\n        ++_index;\n        return STATUS_OK_AFTER_COLON;\n    }\n\n    // Ok, array?\n    if (_type == TYPE_ARRAY) {\n        int ix = _index;\n        ++_index;\n        return (ix < 0) ? STATUS_OK_AS_IS : STATUS_OK_AFTER_COMMA;\n    }\n\n    // Nope, root context\n    // No commas within root context, but need space\n    ++_index;\n    return (_index == 0) ? STATUS_OK_AS_IS : STATUS_OK_AFTER_SPACE;\n}",
+    "bug_name": "JacksonCore-7"
+  }
+]

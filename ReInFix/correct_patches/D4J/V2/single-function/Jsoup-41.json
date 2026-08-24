@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public boolean equals(Object o) {\n    if (this == o) return true;\n    if (o == null || getClass() != o.getClass()) return false;\n    if (!super.equals(o)) return false;\n\n    Element element = (Element) o;\n\n    // Properly compare the tag name, attributes, and child nodes for equality\n    if (!this.tagName().equals(element.tagName())) return false;\n    if (!this.attributes().equals(element.attributes())) return false;\n    if (!this.childNodes().equals(element.childNodes())) return false;\n\n    return true;\n}",
+    "bug_name": "Jsoup-41"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static JsonDeserializer<?> findForCollection(DeserializationContext ctxt,\n        JavaType type)\n    throws JsonMappingException\n{\n    JavaUtilCollectionsConverter conv;\n\n    // 10-Jan-2017, tatu: Some types from `java.util.Collections`/`java.util.Arrays` need bit of help...\n    if (type.hasRawClass(CLASS_AS_ARRAYS_LIST)) {\n        conv = converter(TYPE_AS_LIST, type, List.class);\n    } else if (type.hasRawClass(CLASS_SINGLETON_LIST)) {\n        conv = converter(TYPE_SINGLETON_LIST, type, List.class);\n    } else if (type.hasRawClass(CLASS_SINGLETON_SET)) {\n        conv = converter(TYPE_SINGLETON_SET, type, Set.class);\n    // [databind#2265]: we may have another impl type for unmodifiable Lists, check both\n    } else if (type.hasRawClass(CLASS_UNMODIFIABLE_LIST) || type.getRawClass().getName().equals(\"java.util.Collections$UnmodifiableList\")) { /* bug is here */\n        conv = converter(TYPE_UNMODIFIABLE_LIST, type, List.class);\n    } else if (type.hasRawClass(CLASS_UNMODIFIABLE_SET)) {\n        conv = converter(TYPE_UNMODIFIABLE_SET, type, Set.class);\n    } else {\n        return null;\n    }\n    return new StdDelegatingDeserializer<Object>(conv);\n}",
+    "bug_name": "JacksonDatabind-110"
+  }
+]

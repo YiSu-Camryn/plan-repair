@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public int[] getCounts(int index) {\n    if (index < 0 || index >= totalSize) {\n        throw new OutOfRangeException(index, 0, totalSize);\n    }\n\n    final int[] indices = new int[dimension];\n\n    int count = 0;\n    for (int i = 0; i < last; i++) {\n        int idx = 0;\n        final int offset = uniCounterOffset[i];\n        while (count <= index) {\n            count += offset;\n            ++idx;\n        }\n        --idx;\n        count -= offset;\n        indices[i] = idx;\n    }\n\n    int idx = 1; // Start idx at 1\n    while (count < index) { // Adjust the loop condition\n        count += 1; // Increment count by 1\n        ++idx; // Increment idx\n    }\n    indices[last] = idx - 1; // Assign the corrected idx value\n\n    return indices;\n}",
+    "bug_name": "Math-56"
+  }
+]

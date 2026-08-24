@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public int read() throws IOException {\n    int current = super.read();\n    if (current == '\\r') { // fixed bug for carriage return\n        lineCounter++;\n    } else if (current == '\\n' && lastChar != '\\r') { // handle new line, but only if not preceded by carriage return\n        lineCounter++;\n    }\n    lastChar = current;\n    return lastChar;\n}",
+    "bug_name": "Csv-1"
+  }
+]

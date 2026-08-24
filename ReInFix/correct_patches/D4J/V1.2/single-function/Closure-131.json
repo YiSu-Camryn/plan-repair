@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static boolean isJSIdentifier(String s) {\n  int length = s.length();\n\n  if (length == 0 || !isJavaScriptIdentifierStart(s.charAt(0))) {\n    return false;\n  }\n\n  for (int i = 1; i < length; i++) {\n    if (!isJavaScriptIdentifierPart(s.charAt(i))) {\n      return false;\n    }\n  }\n\n  return true;\n}\n\nprivate static boolean isJavaScriptIdentifierStart(char ch) {\n  return Character.isLetter(ch) || ch == '$' || ch == '_';\n}\n\nprivate static boolean isJavaScriptIdentifierPart(char ch) {\n  return Character.isLetterOrDigit(ch) || ch == '$' || ch == '_';\n}",
+    "bug_name": "Closure-131"
+  }
+]

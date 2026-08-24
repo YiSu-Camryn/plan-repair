@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public StringBuilder getGenericSignature(StringBuilder sb)\n{\n    _classSignature(_class, sb, false);\n    sb.append('<');\n    sb = _referencedType.getGenericSignature(sb);\n    sb.append('>'); // Correcting the incorrect semicolon\n    sb.append(';'); // Append the semicolon after closing the generic signature\n    return sb;\n}",
+    "bug_name": "JacksonDatabind-46"
+  }
+]

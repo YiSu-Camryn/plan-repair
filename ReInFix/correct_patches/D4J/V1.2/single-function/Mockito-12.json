@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Class getGenericType(Field field) {        \n    Type generic = field.getGenericType();\n    if (generic != null && generic instanceof ParameterizedType) {\n        Type actual = ((ParameterizedType) generic).getActualTypeArguments()[0];\n        if (actual instanceof Class) {\n            return (Class) actual;\n        } else if (actual instanceof ParameterizedType) {\n            return (Class) ((ParameterizedType) actual).getRawType();\n        }\n    }\n    return Object.class;\n}",
+    "bug_name": "Mockito-12"
+  }
+]

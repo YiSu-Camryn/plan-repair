@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public TokenBuffer deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {\n    JsonToken t = jp.getCurrentToken();\n    if (t == JsonToken.FIELD_NAME) {\n        // Assume START_OBJECT is missing and create one\n        writeStartObject();\n        copyCurrentStructure(jp);\n        t = jp.nextToken();\n        while (t != JsonToken.END_OBJECT) {\n            copyCurrentStructure(jp);\n            t = jp.nextToken();\n        }\n        writeEndObject();\n    } else {\n        copyCurrentStructure(jp);\n    }\n    return this;\n}",
+    "bug_name": "JacksonDatabind-7"
+  }
+]

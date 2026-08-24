@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected void checkRequiredOptions()\n    throws MissingOptionException\n{\n    if (getRequiredOptions().size() > 0)\n    {\n        Iterator iter = getRequiredOptions().iterator();\n        StringBuffer buff = new StringBuffer(\"Missing required option\");\n        buff.append(getRequiredOptions().size() == 1 ? \"\" : \"s\");\n        buff.append(\": \");\n\n        while (iter.hasNext())\n        {\n            buff.append(iter.next());\n            if (iter.hasNext()) {\n                buff.append(\", \");\n            }\n        }\n\n        throw new MissingOptionException(buff.toString());\n    }\n}",
+    "bug_name": "Cli-9"
+  }
+]

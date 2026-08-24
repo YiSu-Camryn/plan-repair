@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Document clean(Document dirtyDocument) {\n    Validate.notNull(dirtyDocument);\n\n    Document clean = Document.createShell(dirtyDocument.baseUri());\n    Element dirtyBody = dirtyDocument.body();\n    if (dirtyBody != null) {\n        copySafeNodes(dirtyBody, clean.body());\n    }\n\n    return clean;\n}",
+    "bug_name": "Jsoup-26"
+  }
+]

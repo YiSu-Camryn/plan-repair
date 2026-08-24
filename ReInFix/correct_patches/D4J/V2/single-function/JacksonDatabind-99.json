@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected String buildCanonicalName()\n{\n    StringBuilder sb = new StringBuilder();\n    sb.append(_class.getName()); // Append the class name\n    sb.append('<'); // Append the opening angle bracket\n    sb.append(_referencedType.toCanonical()); // Append the canonical name of the referenced type\n    sb.append('>'); // Fix: Ensure the canonical name is properly closed with a closing angle bracket\n    return sb.toString(); \n}",
+    "bug_name": "JacksonDatabind-99"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "JSType resolveInternal(ErrorReporter t, StaticScope<JSType> scope) {\n  setResolvedTypeInternal(this);\n\n  call = (ArrowType) safeResolve(call, t, scope);\n  prototype = (FunctionPrototypeType) safeResolve(prototype, t, scope);\n\n  // Warning about typeOfThis if it doesn't resolve to an ObjectType\n  // is handled further upstream.\n  // TODO (nicksantos): Handle this correctly if we have a UnionType.\n  JSType maybeTypeOfThis = safeResolve(typeOfThis, t, scope);\n  if (maybeTypeOfThis != null) {\n    maybeTypeOfThis = maybeTypeOfThis.restrictByNotNullOrUndefined();\n  }\n  if (maybeTypeOfThis instanceof ObjectType) {\n    typeOfThis = (ObjectType) maybeTypeOfThis;\n  }\n\n  boolean changed = false;\n  ImmutableList.Builder<ObjectType> resolvedInterfaces =\n      ImmutableList.builder();\n  for (ObjectType iface : implementedInterfaces) {\n    ObjectType resolvedIface = (ObjectType) iface.resolve(t, scope);\n    resolvedInterfaces.add(resolvedIface);\n    changed |= (resolvedIface != iface);\n  }\n  if (changed) {\n    implementedInterfaces = resolvedInterfaces.build();\n  }\n\n  if (subTypes != null) {\n    for (int i = 0; i < subTypes.size(); i++) {\n      subTypes.set(i, (FunctionType) subTypes.get(i).resolve(t, scope));\n    }\n  }\n\n  return super.resolveInternal(t, scope);\n}",
+    "bug_name": "Closure-152"
+  }
+]

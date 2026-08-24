@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "<M extends Map<String, String>> M putIn(final M map) {\n    for (final Entry<String, Integer> entry : mapping.entrySet()) {\n        final int col = entry.getValue();\n        if (col < values.length) {\n            map.put(entry.getKey(), values[col]);\n        } else {\n            map.put(entry.getKey(), \"\"); // Assign an empty value for invalid index\n        }\n    }\n    return map;\n}",
+    "bug_name": "Csv-6"
+  }
+]

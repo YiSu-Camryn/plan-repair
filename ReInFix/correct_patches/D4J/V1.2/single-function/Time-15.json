@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static long safeMultiply(long val1, int val2) {\n    if (val1 == Long.MIN_VALUE && val2 == -1) {\n        throw new ArithmeticException(\"Multiplication overflows a long: \" + val1 + \" * \" + val2);\n    }\n    switch (val2) {\n        case -1:\n            return -val1; /* bug is here */\n        case 0:\n            return 0L;\n        case 1:\n            return val1;\n    }\n    long total = val1 * val2;\n    if (total / val2 != val1) {\n        throw new ArithmeticException(\"Multiplication overflows a long: \" + val1 + \" * \" + val2);\n    }\n    return total;\n}",
+    "bug_name": "Time-15"
+  }
+]

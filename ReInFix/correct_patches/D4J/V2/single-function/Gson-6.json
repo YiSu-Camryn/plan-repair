@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "static TypeAdapter<?> getTypeAdapter(ConstructorConstructor constructorConstructor, Gson gson,\n    TypeToken<?> fieldType, JsonAdapter annotation) {\n  Class<?> value = annotation.value();\n  TypeAdapter<?> typeAdapter = null;\n  if (TypeAdapter.class.isAssignableFrom(value)) {\n    Class<TypeAdapter<?>> typeAdapterClass = (Class<TypeAdapter<?>>) value;\n    typeAdapter = constructorConstructor.get(TypeToken.get(typeAdapterClass)).construct();\n  } else if (TypeAdapterFactory.class.isAssignableFrom(value)) {\n    Class<TypeAdapterFactory> typeAdapterFactory = (Class<TypeAdapterFactory>) value;\n    typeAdapter = constructorConstructor.get(TypeToken.get(typeAdapterFactory))\n        .construct()\n        .create(gson, fieldType);\n  } else {\n    throw new IllegalArgumentException(\n        \"@JsonAdapter value must be TypeAdapter or TypeAdapterFactory reference. Found: \" + value.getName());\n  }\n  if (typeAdapter != null) {\n    typeAdapter = typeAdapter.nullSafe();\n  }\n  return typeAdapter;\n}",
+    "bug_name": "Gson-6"
+  }
+]

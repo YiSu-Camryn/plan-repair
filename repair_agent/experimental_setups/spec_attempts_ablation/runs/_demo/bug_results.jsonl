@@ -1,0 +1,8 @@
+{"project": "Mockito", "bug_index": "22", "bug_key": "Mockito-22", "batch": 0, "spec_success": true, "spec_attempts_used": 1, "spec_max_attempts": 5}
+{"project": "Chart", "bug_index": "17", "bug_key": "Chart-17", "batch": 1, "spec_success": true, "spec_attempts_used": 2, "spec_max_attempts": 5}
+{"project": "Time", "bug_index": "14", "bug_key": "Time-14", "batch": 2, "spec_success": true, "spec_attempts_used": 3, "spec_max_attempts": 5}
+{"project": "Math", "bug_index": "79", "bug_key": "Math-79", "batch": 3, "spec_success": true, "spec_attempts_used": 4, "spec_max_attempts": 5}
+{"project": "Math", "bug_index": "72", "bug_key": "Math-72", "batch": 4, "spec_success": true, "spec_attempts_used": 5, "spec_max_attempts": 5}
+{"project": "Closure", "bug_index": "14", "bug_key": "Closure-14", "batch": 0, "spec_success": false, "spec_attempts_used": 5, "spec_max_attempts": 5, "spec_failure_reason": "EXHAUSTED_REJECTS"}
+{"project": "Csv", "bug_index": "9", "bug_key": "Csv-9", "batch": 1, "spec_success": false, "spec_attempts_used": 5, "spec_max_attempts": 5, "spec_failure_reason": "EXHAUSTED_REJECTS"}
+{"project": "Gson", "bug_index": "18", "bug_key": "Gson-18", "batch": 4, "spec_success": true, "spec_attempts_used": 2, "spec_max_attempts": 5}

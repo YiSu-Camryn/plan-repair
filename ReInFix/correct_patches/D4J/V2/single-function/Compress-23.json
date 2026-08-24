@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "InputStream decode(final InputStream in, final Coder coder, byte[] password) throws IOException {\n    byte propsByte = coder.properties[0];\n    long dictSize = coder.properties[1];\n\n    for (int i = 1; i < 4; i++) {\n        long addition = (coder.properties[i + 1] & 0xFFL) << (8 * i);\n        if (dictSize + addition < dictSize) {  // Check for overflow\n            throw new IOException(\"Dictionary size computation overflow\");\n        }\n        dictSize += addition;\n    }\n\n    if (dictSize > LZMAInputStream.DICT_SIZE_MAX) {\n        throw new IOException(\"Dictionary larger than 4GiB maximum size\");\n    }\n    return new LZMAInputStream(in, -1, propsByte, (int) dictSize);\n}",
+    "bug_name": "Compress-23"
+  }
+]

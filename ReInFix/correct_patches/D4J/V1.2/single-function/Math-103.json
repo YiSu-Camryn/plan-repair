@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public double cumulativeProbability(double x) throws MathException {\n    double z = (x - mean) / (standardDeviation * Math.sqrt(2.0));\n    if (Math.abs(z) > 5.8) { // example threshold, use appropriate value based on domain knowledge\n        return z > 0 ? 1.0 : 0.0; // asymptotic expansion for large x\n    } else {\n        return 0.5 * (1.0 + Erf.erf(z));\n    }\n}",
+    "bug_name": "Math-103"
+  }
+]

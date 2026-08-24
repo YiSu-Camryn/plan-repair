@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private static void appendOption(final StringBuffer buff, \n                                 final Option option, \n                                 final boolean required)\n{\n    if (!required)\n    {\n        buff.append(\"[\");\n    }\n\n    if (option.getOpt() != null)\n    {\n        buff.append(\"-\").append(option.getOpt());\n    }\n    else\n    {\n        buff.append(\"--\").append(option.getLongOpt());\n    }\n\n    // if the Option has a value\n    String argName = option.getArgName() != null ? option.getArgName().trim() : null;\n    if (option.hasArg() && argName != null && !argName.isEmpty()) // fix applied here\n    {\n        buff.append(\" <\").append(argName).append(\">\");\n    }\n\n    // if the Option is not a required option\n    if (!required)\n    {\n        buff.append(\"]\");\n    }\n}",
+    "bug_name": "Cli-11"
+  }
+]

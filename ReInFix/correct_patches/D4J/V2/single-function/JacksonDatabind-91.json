@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private boolean _hasCustomHandlers(JavaType t) {\n    if (t.isContainerType()) {\n        // First: value types may have both value and type handlers\n        JavaType ct = t.getContentType();\n        if (ct != null) {\n            if (ct.getValueHandler() != null || ct.getTypeHandler() != null) {\n                return true;\n            }\n        }\n        // Second: map(-like) types may have value handler for key (but not type; keys are untyped)\n        JavaType kt = t.getKeyType();\n        if (kt != null && kt.getValueHandler() != null) {\n            return true;\n        }\n    }\n    return false;\n}",
+    "bug_name": "JacksonDatabind-91"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private RealMatrix squareRoot(RealMatrix m) {\n    if (m instanceof DiagonalMatrix) {\n        int dim = m.getRowDimension();\n        RealMatrix sqrtM = new DiagonalMatrix(dim);\n        for (int i = 0; i < dim; i++) {\n            sqrtM.setEntry(i, i, Math.sqrt(m.getEntry(i, i)));\n        }\n        return sqrtM;\n    } else {\n        final EigenDecomposition dec = new EigenDecomposition(m);\n        return dec.getSquareRoot();\n    }\n}",
+    "bug_name": "Math-13"
+  }
+]

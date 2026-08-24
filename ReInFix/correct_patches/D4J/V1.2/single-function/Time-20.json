@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public int parseInto(DateTimeParserBucket bucket, String text, int position) {\n    String str = text.substring(position);\n    String bestMatch = null;\n    for (String id : ALL_IDS) {\n        if (str.startsWith(id) && (bestMatch == null || id.length() > bestMatch.length())) {\n            bestMatch = id;\n        }\n    }\n    if (bestMatch != null) {\n        bucket.setZone(DateTimeZone.forID(bestMatch));\n        return position + bestMatch.length();\n    }\n    return ~position;\n}",
+    "bug_name": "Time-20"
+  }
+]

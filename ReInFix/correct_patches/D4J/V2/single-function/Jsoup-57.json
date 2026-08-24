@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void removeIgnoreCase(String key) {\n    Validate.notEmpty(key);\n    if (attributes == null)\n        return;\n    Iterator<String> it = attributes.keySet().iterator();\n    while (it.hasNext()) {\n        String attrKey = it.next();\n        if (attrKey.equalsIgnoreCase(key)) {\n            it.remove();\n        }\n    }\n}",
+    "bug_name": "Jsoup-57"
+  }
+]

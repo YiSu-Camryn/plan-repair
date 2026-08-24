@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Number read(JsonReader in) throws IOException {\n  JsonToken jsonToken = in.peek();\n  switch (jsonToken) {\n  case NULL:\n    in.nextNull();\n    return null;\n  case STRING:\n    // Attempt to parse STRING token as a number\n    String str = in.nextString();\n    try {\n      return new LazilyParsedNumber(str);\n    } catch (NumberFormatException e) {\n      throw new JsonSyntaxException(\"Expecting number, got: STRING with value: \" + str, e);\n    }\n  case NUMBER:\n    return new LazilyParsedNumber(in.nextString());\n  default:\n    throw new JsonSyntaxException(\"Expecting number, got: \" + jsonToken);\n  }\n}",
+    "bug_name": "Gson-11"
+  }
+]

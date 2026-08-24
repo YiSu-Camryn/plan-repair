@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH -A pi_juanzhai_umass_edu
+#SBATCH --partition=superpod-a100
+#SBATCH --gres=gpu:a100:1
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=256G
+#SBATCH --time=2-00:00:00
+#SBATCH -o /project/pi_juanzhai_umass_edu/spec-repair-test/logs/%x-%j.out
+#SBATCH -e /project/pi_juanzhai_umass_edu/spec-repair-test/logs/%x-%j.err
+
+set -euo pipefail
+
+PROJECT_BASE="/project/pi_juanzhai_umass_edu/spec-repair-test"
+REINFIX_DIR="${PROJECT_BASE}/ReInFix"
+REPAIRAGENT_SRC="${PROJECT_BASE}/repair_agent"
+
+mkdir -p "${PROJECT_BASE}/logs"
+
+export REPAIRAGENT_SRC
+export REPAIRAGENT_ROOT="${REPAIRAGENT_SRC}"
+export OPENAI_API_KEY="YOUR_KEY_HERE"
+export OPENAI_API_BASE_URL="https://bedrock-mantle.us-east-2.api.aws/v1"
+export OPENAI_API_BASE="https://bedrock-mantle.us-east-2.api.aws/v1"
+
+# Step 2 acceptance (recommended before first batch):
+#   cd "$REINFIX_DIR" && ./scripts/run_step2_acceptance.sh Chart-1
+#
+# Step 3 mode acceptance (baseline vs spec wiring, no LLM):
+#   cd "$REINFIX_DIR" && ./scripts/run_step3_mode_acceptance.sh Chart-1
+#
+# Baseline comparison job (same bug list / model, different mode):
+#   export REINFIX_MODE=baseline
+#   ./run_reinfix_batch.sh bug_list/sf_sample.txt hyperparams.json deepseek.v3.2
+
+export REINFIX_MODE="${REINFIX_MODE:-spec}"
+export REINFIX_SPEC_RUN_TESTS="${REINFIX_SPEC_RUN_TESTS:-1}"
+export REINFIX_SPEC_USE_D4J_INFO="${REINFIX_SPEC_USE_D4J_INFO:-1}"
+
+# Joern + RAG must be running before batch (separate sessions / services):
+#   python ReInFix/src/rag_search_server.py
+#   bash ReInFix/src/joern.sh
+
+cd "$REINFIX_DIR"
+source "$REPAIRAGENT_SRC/venv/bin/activate"
+
+chmod +x run_reinfix_batch.sh
+./run_reinfix_batch.sh \
+  "${PROJECT_BASE}/repair_agent/experimental_setups/batches/01" \
+  hyperparams.json \
+  deepseek.v3.2

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public String get(final String name) {\n    if (mapping == null) {\n        throw new IllegalStateException(\n                \"No header mapping was specified, the record values can't be accessed by name\");\n    }\n    final Integer index = mapping.get(name);\n    if (index != null && index >= 0 && index < values.length) {\n        return values[index.intValue()];\n    } else {\n        throw new IllegalArgumentException(\"Index out of bounds for the values array\");\n    }\n}",
+    "bug_name": "Csv-2"
+  }
+]

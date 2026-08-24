@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "int nextIndexOf(CharSequence seq) {\n    // doesn't handle scanning for surrogates\n    char startChar = seq.charAt(0);\n    for (int offset = pos; offset < length; offset++) {\n        // scan to first instance of startchar:\n        if (startChar != input[offset])\n            while(++offset < length && startChar != input[offset]);\n        int i = offset + 1;\n        int last = offset + seq.length() - 1; /* Adjusted computation */\n        if (offset < length && last < length) { /* Ensure 'last' is within bounds */\n            for (int j = 1; i <= last && seq.charAt(j) == input[i]; i++, j++); /* Updated condition */\n            if (i > last) // found full sequence\n                return offset - pos;\n        }\n    }\n    return -1;\n}",
+    "bug_name": "Jsoup-34"
+  }
+]

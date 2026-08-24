@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "    public Complex divide(Complex divisor)\n        throws NullArgumentException {\n        MathUtils.checkNotNull(divisor);\n        if (isNaN || divisor.isNaN) {\n            return NaN;\n        }\n\n        if (divisor.isZero) {\n            return NaN; /* bug is here */\n        }\n\n        if (divisor.isInfinite() && !isInfinite()) {\n            return ZERO;\n        }\n\n        final double c = divisor.getReal();\n        final double d = divisor.getImaginary();\n\n        if (FastMath.abs(c) < FastMath.abs(d)) {\n            double q = c / d;\n            double denominator = c * q + d;\n            return createComplex((real * q + imaginary) / denominator,\n                (imaginary * q - real) / denominator);\n        } else {\n            double q = d / c;\n            double denominator = d * q + c;\n            return createComplex((imaginary * q + real) / denominator,\n                (imaginary - real * q) / denominator);\n        }\n    }",
+      "2": "    public Complex divide(double divisor) {\n        if (isNaN || Double.isNaN(divisor)) {\n            return NaN;\n        }\n        if (divisor == 0d) {\n            return NaN; /* bug is here */\n        }\n        if (Double.isInfinite(divisor)) {\n            return !isInfinite() ? ZERO : NaN;\n        }\n        return createComplex(real / divisor,\n                             imaginary  / divisor);\n    }"
+    },
+    "bug_name": "Math-46"
+  }
+]

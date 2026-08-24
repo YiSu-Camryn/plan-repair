@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public double solve(final UnivariateRealFunction f, double min, double max, double initial)\n    throws MaxIterationsExceededException, FunctionEvaluationException {\n    // Ensure initial is within the bounds\n    if(initial < min || initial > max) {\n        throw new IllegalArgumentException(\"Initial value out of bounds\");\n    }\n    return solve(f, min, max); // Pass 'f' to the inner solve method\n}",
+    "bug_name": "Math-70"
+  }
+]

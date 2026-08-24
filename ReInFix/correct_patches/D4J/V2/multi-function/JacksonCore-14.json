@@ -1,0 +1,10 @@
+[
+  {
+    "patch_code": {
+      "1": "protected final void _verifyRelease(byte[] toRelease, byte[] src) {\n    // 07-Mar-2016, tatu: As per [core#255], only prevent shrinking of buffer\n    if (toRelease == null) {\n        return; // null is treated as a no-op\n    }\n    if ((toRelease != src) && (toRelease.length < src.length)) { \n        throw wrongBuf(); \n    }\n}",
+      "2": "protected final void _verifyRelease(char[] toRelease, char[] src) {\n    // 07-Mar-2016, tatu: As per [core#255], only prevent shrinking of buffer\n    if (toRelease == null) {\n        return; // null is treated as a no-op\n    }\n    if ((toRelease != src) && (toRelease.length < src.length)) { \n        throw wrongBuf(); \n    }\n}",
+      "3": "private IllegalArgumentException wrongBuf() {\n    // sanity check failed; trying to return different, smaller buffer.\n    return new IllegalArgumentException(\"Trying to release buffer not owned by the context or smaller than original\");\n}"
+    },
+    "bug_name": "JacksonCore-14"
+  }
+]

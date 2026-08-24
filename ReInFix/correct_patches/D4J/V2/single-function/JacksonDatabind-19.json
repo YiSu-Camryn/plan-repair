@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private JavaType _mapType(Class<?> rawClass)\n{\n    // Special handling for Properties class as per [databind#810]\n    if (rawClass == Properties.class) {\n        return MapType.construct(rawClass, _constructType(String.class, null), _constructType(String.class, null));\n    }\n    \n    JavaType[] typeParams = findTypeParameters(rawClass, Map.class);\n    // ok to have no types (\"raw\")\n    if (typeParams == null) {\n        return MapType.construct(rawClass, _unknownType(), _unknownType());\n    }\n    // but exactly 2 types if any found\n    if (typeParams.length != 2) {\n        throw new IllegalArgumentException(\"Strange Map type \" + rawClass.getName() + \": can not determine type parameters\");\n    }\n    return MapType.construct(rawClass, typeParams[0], typeParams[1]);\n}",
+    "bug_name": "JacksonDatabind-19"
+  }
+]

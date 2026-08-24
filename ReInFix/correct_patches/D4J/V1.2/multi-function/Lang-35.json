@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "public static <T> T[] add(T[] array, T element) {\n    Class<?> type;\n    if (array != null) {\n        type = array.getClass();\n    } else if (element != null) {\n        type = element.getClass();\n    } else {\n        throw new IllegalArgumentException(\"Both array and element are null\");\n    }\n    @SuppressWarnings(\"unchecked\") // type must be T\n    T[] newArray = (T[]) copyArrayGrow1(array, type);\n    newArray[newArray.length - 1] = element;\n    return newArray;\n}",
+      "2": "public static <T> T[] add(T[] array, int index, T element) {\n    Class<?> clss = null;\n    if (array != null) {\n        clss = array.getClass().getComponentType();\n    } else if (element != null) {\n        clss = element.getClass();\n    } else {\n        throw new IllegalArgumentException(\"Both array and element are null\");\n    }\n    @SuppressWarnings(\"unchecked\") // the add method creates an array of type clss, which is type T\n    final T[] newArray = (T[]) add(array, index, element, clss);\n    return newArray;\n}"
+    },
+    "bug_name": "Lang-35"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void writeEmbeddedObject(Object object) throws IOException {\n    if (object == null) {\n        writeNull();\n    } else if (object instanceof byte[]) {\n        writeBinary((byte[]) object);\n    } else {\n        throw new JsonGenerationException(\"No native support for writing embedded objects\", this);\n    }\n}",
+    "bug_name": "JacksonCore-20"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public StringBuffer format(Calendar calendar, StringBuffer buf) {\n    if (mTimeZoneForced) {\n        Calendar newCalendar = Calendar.getInstance(mTimeZone);\n        newCalendar.setTimeInMillis(calendar.getTimeInMillis());\n        calendar = newCalendar;\n    }\n    return applyRules(calendar, buf);\n}",
+    "bug_name": "Lang-38"
+  }
+]

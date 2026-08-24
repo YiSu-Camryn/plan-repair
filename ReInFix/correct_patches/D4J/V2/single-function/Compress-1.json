@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void close() throws IOException {\n    if (!this.closed) {\n        this.finish(); // Ensure all data is properly written out\n        super.close(); // Close the stream\n        this.closed = true; // Mark the stream as closed\n    }\n}",
+    "bug_name": "Compress-1"
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "public Vector3D intersection(final SubLine subLine, final boolean includeEndPoints) {\n\n    // compute the intersection on infinite line\n    Vector3D v1D = line.intersection(subLine.line);\n    /* bug is here */\n    if (v1D == null) {\n        return null;\n    }\n\n    // check location of point with respect to first sub-line\n    Location loc1 = remainingRegion.checkPoint(line.toSubSpace(v1D));\n\n    // check location of point with respect to second sub-line\n    Location loc2 = subLine.remainingRegion.checkPoint(subLine.line.toSubSpace(v1D));\n\n    if (includeEndPoints) {\n        return ((loc1 != Location.OUTSIDE) && (loc2 != Location.OUTSIDE)) ? v1D : null;\n    } else {\n        return ((loc1 == Location.INSIDE) && (loc2 == Location.INSIDE)) ? v1D : null;\n    }\n\n}",
+      "2": "public Vector2D intersection(final SubLine subLine, final boolean includeEndPoints) {\n\n    // retrieve the underlying lines\n    Line line1 = (Line) getHyperplane();\n    Line line2 = (Line) subLine.getHyperplane();\n\n    // compute the intersection on infinite line\n    Vector2D v2D = line1.intersection(line2);\n    /* bug is here */\n    if (v2D == null) {\n        return null;\n    }\n\n    // check location of point with respect to first sub-line\n    Location loc1 = getRemainingRegion().checkPoint(line1.toSubSpace(v2D));\n\n    // check location of point with respect to second sub-line\n    Location loc2 = subLine.getRemainingRegion().checkPoint(line2.toSubSpace(v2D));\n\n    if (includeEndPoints) {\n        return ((loc1 != Location.OUTSIDE) && (loc2 != Location.OUTSIDE)) ? v2D : null;\n    } else {\n        return ((loc1 == Location.INSIDE) && (loc2 == Location.INSIDE)) ? v2D : null;\n    }\n\n}"
+    },
+    "bug_name": "Math-4"
+  }
+]

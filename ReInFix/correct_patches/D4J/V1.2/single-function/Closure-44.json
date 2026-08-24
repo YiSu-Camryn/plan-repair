@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "void add(String newcode) {\n  maybeEndStatement();\n\n  if (newcode.length() == 0) {\n    return;\n  }\n\n  char c = newcode.charAt(0);\n  if ((isWordChar(c) || c == '\\\\') && isWordChar(getLastChar())) {\n    // need space to separate. This is not pretty printing.\n    // For example: \"return foo;\"\n    append(\" \");\n  } else if (c == '/' && getLastChar() == '/') {\n    // Do not allow a forward slash to appear after a DIV.\n    // For example,\n    // REGEXP DIV REGEXP\n    // is valid and should print like\n    // / // / /\n    append(\" \");\n  }\n\n  append(newcode);\n}",
+    "bug_name": "Closure-44"
+  }
+]

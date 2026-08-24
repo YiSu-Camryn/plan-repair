@@ -210,6 +210,41 @@ def record_bug_result_spec_failed(
     append_bug_result(record)
 
 
+def record_bug_result_spec_ok(
+    spec_result: dict[str, Any],
+    model: str,
+    elapsed_seconds: float,
+    started_at: str,
+) -> None:
+    """Record a spec-only run that passed verification (no repair loop)."""
+    project = spec_result.get("project_name", "unknown")
+    bug_index = str(spec_result.get("bug_index", "unknown"))
+    exp_dir = _current_experiment_dir()
+    spec_fields = _spec_fields(spec_result)
+
+    record = {
+        "project": project,
+        "bug_index": bug_index,
+        "model": model,
+        "started_at": started_at,
+        "ended_at": _utc_now(),
+        "outcome": "SPEC_OK",
+        **spec_fields,
+        "repair_ran": False,
+        "repair_cycles_used": None,
+        "fixes_attempted": None,
+        "repair_failure_reason": None,
+        "spec_log_metrics": extract_spec_log_metrics(exp_dir, project, bug_index, spec_result),
+        "repair_context_metrics": None,
+        "plan_localization": extract_plan_localization_metrics(
+            exp_dir, project, bug_index, spec_result
+        ),
+        **_metrics_fields(elapsed_seconds),
+        "artifacts": _build_artifacts(exp_dir, project, bug_index),
+    }
+    append_bug_result(record)
+
+
 def record_bug_result_from_agent(agent: Agent, elapsed_seconds: float) -> None:
     project = getattr(agent, "project_name", "unknown")
     bug_index = str(getattr(agent, "bug_index", "unknown"))

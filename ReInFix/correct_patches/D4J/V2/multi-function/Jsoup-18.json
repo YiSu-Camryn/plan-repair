@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "CharacterReader(String input) {\n    Validate.notNull(input);\n    this.input = input.replace(\"\\r\\n\", \"\\n\").replace(\"\\r\", \"\\n\"); // Handle newline characters\n    this.length = this.input.length();\n}",
+      "2": "String consumeToEnd() {\n    String data = input.substring(pos); // Correct the substring operation to include the last character\n    pos = input.length();\n    return data;\n}"
+    },
+    "bug_name": "Jsoup-18"
+  }
+]

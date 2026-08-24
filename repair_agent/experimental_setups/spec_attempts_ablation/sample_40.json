@@ -1,0 +1,287 @@
+{
+  "seed": 42,
+  "per_batch": 8,
+  "total": 40,
+  "bugs": [
+    {
+      "batch": 0,
+      "project": "Mockito",
+      "bug_index": "22",
+      "bug_key": "Mockito-22",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "71",
+      "bug_key": "JacksonDatabind-71",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "9",
+      "bug_key": "JacksonDatabind-9",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "Closure",
+      "bug_index": "14",
+      "bug_key": "Closure-14",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "62",
+      "bug_key": "JacksonDatabind-62",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "63",
+      "bug_key": "JacksonDatabind-63",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "43",
+      "bug_key": "JacksonDatabind-43",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 0,
+      "project": "JacksonDatabind",
+      "bug_index": "8",
+      "bug_key": "JacksonDatabind-8",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Chart",
+      "bug_index": "17",
+      "bug_key": "Chart-17",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Closure",
+      "bug_index": "161",
+      "bug_key": "Closure-161",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Csv",
+      "bug_index": "9",
+      "bug_key": "Csv-9",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Codec",
+      "bug_index": "18",
+      "bug_key": "Codec-18",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Closure",
+      "bug_index": "99",
+      "bug_key": "Closure-99",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Closure",
+      "bug_index": "123",
+      "bug_key": "Closure-123",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "JxPath",
+      "bug_index": "21",
+      "bug_key": "JxPath-21",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 1,
+      "project": "Closure",
+      "bug_index": "119",
+      "bug_key": "Closure-119",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Time",
+      "bug_index": "14",
+      "bug_key": "Time-14",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Time",
+      "bug_index": "17",
+      "bug_key": "Time-17",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Time",
+      "bug_index": "19",
+      "bug_key": "Time-19",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Compress",
+      "bug_index": "15",
+      "bug_key": "Compress-15",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Compress",
+      "bug_index": "38",
+      "bug_key": "Compress-38",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Cli",
+      "bug_index": "32",
+      "bug_key": "Cli-32",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "Jsoup",
+      "bug_index": "6",
+      "bug_key": "Jsoup-6",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 2,
+      "project": "JacksonXml",
+      "bug_index": "3",
+      "bug_key": "JacksonXml-3",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Jsoup",
+      "bug_index": "32",
+      "bug_key": "Jsoup-32",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Math",
+      "bug_index": "79",
+      "bug_key": "Math-79",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Math",
+      "bug_index": "2",
+      "bug_key": "Math-2",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Math",
+      "bug_index": "80",
+      "bug_key": "Math-80",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Math",
+      "bug_index": "58",
+      "bug_key": "Math-58",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Lang",
+      "bug_index": "24",
+      "bug_key": "Lang-24",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "Jsoup",
+      "bug_index": "10",
+      "bug_key": "Jsoup-10",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 3,
+      "project": "JacksonCore",
+      "bug_index": "23",
+      "bug_key": "JacksonCore-23",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "72",
+      "bug_key": "Math-72",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "38",
+      "bug_key": "Math-38",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "96",
+      "bug_key": "Math-96",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "30",
+      "bug_key": "Math-30",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Gson",
+      "bug_index": "18",
+      "bug_key": "Gson-18",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "75",
+      "bug_key": "Math-75",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "91",
+      "bug_key": "Math-91",
+      "in_sf_dataset": true
+    },
+    {
+      "batch": 4,
+      "project": "Math",
+      "bug_index": "101",
+      "bug_key": "Math-101",
+      "in_sf_dataset": true
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "total_bugs": 8,
+  "spec_max_attempts": 5,
+  "final_spec_success": 6,
+  "final_spec_success_pct": "75.0%",
+  "pass_rates": [
+    {
+      "k": 2,
+      "passed": 3,
+      "total": 8,
+      "rate": 0.375,
+      "rate_pct": "37.5%",
+      "delta_from_prev": 3,
+      "delta_from_prev_pct": "37.5%"
+    },
+    {
+      "k": 3,
+      "passed": 4,
+      "total": 8,
+      "rate": 0.5,
+      "rate_pct": "50.0%",
+      "delta_from_prev": 1,
+      "delta_from_prev_pct": "12.5%"
+    },
+    {
+      "k": 4,
+      "passed": 5,
+      "total": 8,
+      "rate": 0.625,
+      "rate_pct": "62.5%",
+      "delta_from_prev": 1,
+      "delta_from_prev_pct": "12.5%"
+    },
+    {
+      "k": 5,
+      "passed": 6,
+      "total": 8,
+      "rate": 0.75,
+      "rate_pct": "75.0%",
+      "delta_from_prev": 1,
+      "delta_from_prev_pct": "12.5%"
+    }
+  ],
+  "attempt_histogram": {
+    "1": 1,
+    "2": 2,
+    "3": 1,
+    "4": 1,
+    "5": 1
+  },
+  "attempt_stats_successful": {
+    "min": 1,
+    "max": 5,
+    "mean": 2.83
+  },
+  "failure_reasons": {
+    "EXHAUSTED_REJECTS": 2
+  },
+  "by_batch": {
+    "0": {
+      "total": 2,
+      "pass_at_5": 1,
+      "pass_at_4": 1,
+      "pass_at_3": 1,
+      "pass_at_2": 1
+    },
+    "1": {
+      "total": 2,
+      "pass_at_5": 1,
+      "pass_at_4": 1,
+      "pass_at_3": 1,
+      "pass_at_2": 1
+    },
+    "2": {
+      "total": 1,
+      "pass_at_5": 1,
+      "pass_at_4": 1,
+      "pass_at_3": 1,
+      "pass_at_2": 0
+    },
+    "3": {
+      "total": 1,
+      "pass_at_5": 1,
+      "pass_at_4": 1,
+      "pass_at_3": 0,
+      "pass_at_2": 0
+    },
+    "4": {
+      "total": 2,
+      "pass_at_5": 2,
+      "pass_at_4": 1,
+      "pass_at_3": 1,
+      "pass_at_2": 1
+    }
+  },
+  "bug_results_path": "C:\\Users\\sy271\\Downloads\\RepairAgent-main\\RepairAgent-main\\repair_agent\\experimental_setups\\spec_attempts_ablation\\runs\\_demo\\bug_results.jsonl"
+}

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private boolean isSafeReplacement(Node node, Node replacement) {\n  // No checks are needed for simple names.\n  if (node.isName()) {\n    return true;\n  }\n  Preconditions.checkArgument(node.isGetProp());\n\n  // Check if the first child is a name and if it is assigned to the replacement\n  Node firstChild = node.getFirstChild();\n  if (firstChild != null && firstChild.isName() && isNameAssignedTo(firstChild.getString(), replacement)) {\n    return false;\n  }\n  \n  // Handle nested properties and assignments\n  while (firstChild != null && firstChild.isGetProp()) {\n    firstChild = firstChild.getFirstChild();\n    if (firstChild != null && firstChild.isName() && isNameAssignedTo(firstChild.getString(), replacement)) {\n      return false;\n    }\n  }\n\n  return true;\n}",
+    "bug_name": "Closure-124"
+  }
+]

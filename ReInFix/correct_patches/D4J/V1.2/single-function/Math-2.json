@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public double getNumericalMean() {\n    long sampleSize = (long) getSampleSize();\n    long numberOfSuccesses = (long) getNumberOfSuccesses();\n    long populationSize = (long) getPopulationSize();\n\n    if (populationSize <= 0) {\n        throw new IllegalArgumentException(\"Population size must be positive\");\n    }\n    if (sampleSize < 0 || numberOfSuccesses < 0) {\n        throw new IllegalArgumentException(\"Sample size and number of successes must be non-negative\");\n    }\n\n    // Using double multiplication to prevent integer overflow\n    return (double) sampleSize * (double) numberOfSuccesses / (double) populationSize;\n}",
+    "bug_name": "Math-2"
+  }
+]

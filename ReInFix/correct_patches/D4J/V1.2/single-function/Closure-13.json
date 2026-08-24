@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private void traverse(Node node) {\n  if (!shouldVisit(node)) {\n    return;\n  }\n\n  int visits = 0;\n  do {\n    Node c = node.getFirstChild();\n    while (c != null) {\n      Node next = c.getNext(); // Store the next node before recursion\n      traverse(c);\n      c = next; // Correctly update c to its next sibling\n    }\n\n    visit(node);\n    visits++;\n    Preconditions.checkState(visits < 10000, \"too many iterations\");\n  } while (shouldRetraverse(node));\n\n  exitNode(node);\n}",
+    "bug_name": "Closure-13"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public String absUrl(String attributeKey) {\n    Validate.notEmpty(attributeKey);\n\n    String relUrl = attr(attributeKey);\n    if (!hasAttr(attributeKey)) {\n        return \"\"; // nothing to make absolute with\n    } else {\n        try {\n            URL abs = resolveUrl(relUrl, baseUri);\n            return abs.toExternalForm();\n        } catch (MalformedURLException e) {\n            return \"\";\n        }\n    }\n}\n\nprivate URL resolveUrl(String relUrl, String baseUri) throws MalformedURLException {\n    if (relUrl.startsWith(\"?\")) {\n        URL base = new URL(baseUri);\n        String absoluteUrl = base.getProtocol() + \"://\" + base.getHost() + base.getPath() + relUrl;\n        return new URL(absoluteUrl);\n    } else {\n        try {\n            return new URL(new URL(baseUri), relUrl);\n        } catch (MalformedURLException e) {\n            return new URL(relUrl);\n        }\n    }\n}",
+    "bug_name": "Jsoup-10"
+  }
+]

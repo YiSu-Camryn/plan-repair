@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Map<String, Integer> getHeaderMap() {\n    if (this.headerMap == null) {\n        return null;\n    }\n    return new LinkedHashMap<String, Integer>(this.headerMap);\n}",
+    "bug_name": "Csv-4"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "<M extends Map<String, String>> M putIn(final M map) {\n    if (mapping == null || values == null) {\n        // Handle the null case by logging an error and returning the map\n        System.err.println(\"Error: mapping or values is null\");\n        return map;\n    }\n    for (final Entry<String, Integer> entry : mapping.entrySet()) { /* bug is here */\n        final int col = entry.getValue().intValue();\n        if (col < values.length) {\n            map.put(entry.getKey(), values[col]);\n        }\n    }\n    return map;\n}",
+    "bug_name": "Csv-9"
+  }
+]

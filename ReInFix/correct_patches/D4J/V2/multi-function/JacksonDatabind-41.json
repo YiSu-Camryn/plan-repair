@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "@Deprecated\npublic JavaType constructType(Type type, Class<?> contextClass) {\n    if (contextClass == null) {\n        return constructType(type, (JavaType) null); // Handle the null contextClass case\n    }\n    return constructType(type, constructType(contextClass));\n}",
+      "2": "@Deprecated\npublic JavaType constructType(Type type, JavaType contextType) {\n    if (contextType == null) {\n        return _fromAny(null, type, TypeBindings.emptyBindings()); // Handle the null contextType case\n    }\n    return _fromAny(null, type, contextType.getBindings());\n}"
+    },
+    "bug_name": "JacksonDatabind-41"
+  }
+]

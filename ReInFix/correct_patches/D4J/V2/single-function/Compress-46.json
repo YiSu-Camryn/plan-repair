@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private static ZipLong unixTimeToZipLong(long l) {\n    final long MAX_SIGNED_32BIT = 0x7FFFFFFFL; // 2^31-1\n    final long MIN_SIGNED_32BIT = -0x80000000L; // -2^31\n    if (l > MAX_SIGNED_32BIT || l < MIN_SIGNED_32BIT) {\n        throw new IllegalArgumentException(\"X5455 timestamps must fit in a signed 32 bit integer: \" + l);\n    }\n    return new ZipLong(l);\n}",
+    "bug_name": "Compress-46"
+  }
+]

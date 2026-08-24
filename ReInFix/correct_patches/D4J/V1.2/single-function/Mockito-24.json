@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Object answer(InvocationOnMock invocation) {\n    if (methodsGuru.isToString(invocation.getMethod())) {\n        Object mock = invocation.getMock();\n        MockName name = mockUtil.getMockName(mock);\n        if (name.isDefault()) {\n            return \"Mock for \" + mockUtil.getMockSettings(mock).getTypeToMock().getSimpleName() + \", hashCode: \" + mock.hashCode();\n        } else {\n            return name.toString();\n        }\n    } else if (methodsGuru.isCompareToMethod(invocation.getMethod())) {\n        // Check if the mock is compared to itself\n        return invocation.getMock() == invocation.getArguments()[0] ? 0 : 1;\n    }\n    \n    Class<?> returnType = invocation.getMethod().getReturnType();\n    return returnValueFor(returnType);\n}",
+    "bug_name": "Mockito-24"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public ChecksumCalculatingInputStream(final Checksum checksum, final InputStream in) {\n    if (checksum == null) {\n        throw new NullPointerException(\"Checksum must not be null\");\n    }\n    if (in == null) {\n        throw new NullPointerException(\"InputStream must not be null\");\n    }\n    this.checksum = checksum;\n    this.in = in;\n}",
+    "bug_name": "Compress-44"
+  }
+]

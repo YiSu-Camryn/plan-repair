@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void stop() {\n    if(this.runningState != STATE_RUNNING && this.runningState != STATE_SUSPENDED) {\n        throw new IllegalStateException(\"Stopwatch is not running.\");\n    }\n    if (this.runningState == STATE_RUNNING) {\n        stopTime = System.currentTimeMillis();\n    } else if (this.runningState == STATE_SUSPENDED) {\n        // No need to reset stopTime when already suspended\n    }\n    this.runningState = STATE_STOPPED;\n}",
+    "bug_name": "Lang-55"
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "public ElitisticListPopulation(final List<Chromosome> chromosomes,\n                               final int populationLimit,\n                               final double elitismRate) {\n    super(chromosomes, populationLimit);\n    if (elitismRate < 0 || elitismRate > 1) {\n        throw new OutOfRangeException(elitismRate, 0, 1);\n    }\n    this.elitismRate = elitismRate;\n}",
+      "2": "public ElitisticListPopulation(final int populationLimit, final double elitismRate) {\n    super(populationLimit);\n    if (elitismRate < 0 || elitismRate > 1) {\n        throw new OutOfRangeException(elitismRate, 0, 1);\n    }\n    this.elitismRate = elitismRate;\n}"
+    },
+    "bug_name": "Math-35"
+  }
+]

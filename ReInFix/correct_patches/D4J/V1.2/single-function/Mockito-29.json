@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void describeTo(Description description) {\n    description.appendText(\"same(\");\n    appendQuoting(description);\n    if (wanted != null) {\n        description.appendText(wanted.toString());\n    } else {\n        description.appendText(\"null\");\n    }\n    appendQuoting(description);\n    description.appendText(\")\");\n}",
+    "bug_name": "Mockito-29"
+  }
+]

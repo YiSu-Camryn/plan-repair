@@ -1,0 +1,17 @@
+[
+  {
+    "patch_code": {
+      "1": "public void add(DurationFieldType type, int amount) {\n    if (type == null) {\n        throw new IllegalArgumentException(\"Field must not be null\");\n    }\n    if (amount == 0) {\n        return;\n    }\n    setMillis(type.getField(getChronology()).add(getMillis(), amount));\n}",
+      "2": "public void addYears(final int years) {\n    if (years == 0) {\n        return;\n    }\n    setMillis(getChronology().years().add(getMillis(), years));\n}",
+      "3": "public void addWeekyears(final int weekyears) {\n    if (weekyears == 0) {\n        return;\n    }\n    setMillis(getChronology().weekyears().add(getMillis(), weekyears));\n}",
+      "4": "public void addMonths(final int months) {\n    if (months == 0) {\n        return;\n    }\n    setMillis(getChronology().months().add(getMillis(), months));\n}",
+      "5": "public void addWeeks(final int weeks) {\n    if (weeks == 0) {\n        return;\n    }\n    setMillis(getChronology().weeks().add(getMillis(), weeks));\n}",
+      "6": "public void addDays(final int days) {\n    if (days == 0) {\n        return;\n    }\n    setMillis(getChronology().days().add(getMillis(), days));\n}",
+      "7": "public void addHours(final int hours) {\n    if (hours == 0) {\n        return;\n    }\n    setMillis(getChronology().hours().add(getMillis(), hours));\n}",
+      "8": "public void addMinutes(final int minutes) {\n    if (minutes == 0) {\n        return;\n    }\n    setMillis(getChronology().minutes().add(getMillis(), minutes));\n}",
+      "9": "public void addSeconds(final int seconds) {\n    if (seconds == 0) {\n        return;\n    }\n    setMillis(getChronology().seconds().add(getMillis(), seconds));\n}",
+      "10": "public void addMillis(final int millis) {\n    if (millis == 0) {\n        return;\n    }\n    setMillis(getChronology().millis().add(getMillis(), millis));\n}"
+    },
+    "bug_name": "Time-3"
+  }
+]

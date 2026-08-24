@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected Object _deserializeFromEmptyString() throws IOException {\n    // As per [databind#398], URI requires special handling\n    if (_kind == STD_URI) {\n        return URI.create(\"\");\n    }\n    // Handle Locale as per [databind#1123]\n    if (_kind == STD_LOCALE) {\n        return Locale.ROOT;\n    }\n    // Fallback to superclass handling for other types\n    return super._deserializeFromEmptyString(); \n}",
+    "bug_name": "JacksonDatabind-42"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void addValue(Object v) {\n    if (v instanceof Comparable) {\n        addValue((Comparable<?>) v); // cast is safe because we checked instanceof\n    } else {\n        throw new IllegalArgumentException(\"Object is not Comparable: \" + v);\n    }\n}",
+    "bug_name": "Math-89"
+  }
+]

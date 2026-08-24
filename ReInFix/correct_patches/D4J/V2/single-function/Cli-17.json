@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected void burstToken(String token, boolean stopAtNonOption)\n{\n    for (int i = 1; i < token.length(); i++)\n    {\n        String ch = String.valueOf(token.charAt(i));\n\n        if (options.hasOption(ch))\n        {\n            tokens.add(\"-\" + ch);\n            currentOption = options.getOption(ch);\n\n            if (currentOption.hasArg() && (token.length() != (i + 1)))\n            {\n                tokens.add(token.substring(i + 1));\n\n                break;\n            }\n        }\n        else if (stopAtNonOption)\n        {\n            tokens.add(token.substring(i));\n            break;\n        }\n        else\n        {\n            tokens.add(token);\n            break;\n        }\n    }\n}",
+    "bug_name": "Cli-17"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private Map<String, Integer> initializeHeader() throws IOException {\n    Map<String, Integer> hdrMap = null;\n    final String[] formatHeader = this.format.getHeader();\n    if (formatHeader != null) {\n        hdrMap = new LinkedHashMap<String, Integer>();\n\n        String[] header = null;\n        if (formatHeader.length == 0) {\n            // read the header from the first line of the file\n            final CSVRecord nextRecord = this.nextRecord();\n            if (nextRecord != null) {\n                header = nextRecord.values();\n            }\n        } else {\n            if (this.format.getSkipHeaderRecord()) {\n                this.nextRecord();\n            }\n            header = formatHeader;\n        }\n\n        // build the name to index mappings\n        if (header != null) {\n            for (int i = 0; i < header.length; i++) {\n                String headerName = header[i];\n                if (hdrMap.containsKey(headerName)) {\n                    throw new IllegalStateException(\"Duplicate header entry: \" + headerName);\n                }\n                hdrMap.put(headerName, Integer.valueOf(i));\n            }\n        }\n    }\n    return hdrMap;\n}",
+    "bug_name": "Csv-7"
+  }
+]

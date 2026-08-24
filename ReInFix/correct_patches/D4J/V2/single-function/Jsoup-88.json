@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public String getValue() {\n    if (val == null) {\n        return \"\"; // Return an empty string if val is null\n    }\n    return val;\n}",
+    "bug_name": "Jsoup-88"
+  }
+]

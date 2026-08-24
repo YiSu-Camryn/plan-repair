@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static boolean isAvailableLocale(Locale locale) {\n    if (cAvailableLocaleSet == null) {\n        // Handle the case when cAvailableLocaleSet is not initialized\n        return false;\n    }\n    return cAvailableLocaleSet.contains(locale); /* bug is here */\n}",
+    "bug_name": "Lang-57"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private void checkRequiredOptions()\n    throws MissingOptionException\n{\n    // if there are required options that have not been\n    // processed\n    if (requiredOptions.size() > 0)\n    {\n        Iterator iter = requiredOptions.iterator();\n        StringBuffer buff = new StringBuffer(\"Missing required option\"); // add prefix here\n\n        if(requiredOptions.size() > 1) {\n            buff.append(\"s\");\n        }\n        buff.append(\": \");\n\n        // loop through the required options\n        while (iter.hasNext())\n        {\n            buff.append(iter.next());\n        }\n\n        throw new MissingOptionException(buff.toString());\n    }\n}",
+    "bug_name": "Cli-4"
+  }
+]

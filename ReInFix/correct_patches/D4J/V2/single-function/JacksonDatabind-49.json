@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Object generateId(Object forPojo) {\n    // Ensure that the generator is properly initialized\n    if (generator == null) {\n        throw new IllegalStateException(\"Generator has not been initialized\");\n    }\n    // Check if the ID has already been generated\n    if (id == null) {\n        id = generator.generateId(forPojo); /* bug is here */\n    }\n    return id; /* bug is here */\n}",
+    "bug_name": "JacksonDatabind-49"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public double getSumSquaredErrors() {\n    // Ensure sumXX is properly initialized and checked\n    if (sumXX <= 0) {\n        // sumXX should never be zero or negative in a proper regression scenario\n        return Double.NaN; // or return an appropriate error code/value\n    }\n    return Math.max(0, sumYY - sumXY * sumXY / sumXX); // Ensure non-negative result\n}",
+    "bug_name": "Math-105"
+  }
+]

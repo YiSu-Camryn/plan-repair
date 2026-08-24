@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public JsonWriter value(double value) throws IOException {\n  writeDeferredName();\n  checkNonFinite(value); // Use the helper method\n  beforeValue();\n  out.append(Double.toString(value));\n  return this;\n}\n\nprivate void checkNonFinite(double value) {\n  if (!lenient && (Double.isNaN(value) || Double.isInfinite(value))) {\n    throw new IllegalArgumentException(\"Numeric values must be finite, but was \" + value);\n  }\n}",
+    "bug_name": "Gson-15"
+  }
+]

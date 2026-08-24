@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected void declareNameInScope(FlowScope scope, Node node, JSType type) {\n  switch (node.getType()) {\n    case Token.NAME:\n      scope.inferSlotType(node.getString(), type);\n      break;\n\n    case Token.GETPROP:\n      String qualifiedName = node.getQualifiedName();\n      Preconditions.checkNotNull(qualifiedName);\n\n      JSType origType = node.getJSType();\n      origType = origType == null ? getNativeType(UNKNOWN_TYPE) : origType;\n      scope.inferQualifiedSlot(node, qualifiedName, origType, type);\n      break;\n\n    case Token.THIS:\n      // Handle the Token.THIS case\n      scope.inferSlotType(\"this\", type);\n      break;\n\n    default:\n      throw new IllegalArgumentException(\"Node cannot be refined. \\n\" +\n          node.toStringTree());\n  }\n}",
+    "bug_name": "Closure-19"
+  }
+]

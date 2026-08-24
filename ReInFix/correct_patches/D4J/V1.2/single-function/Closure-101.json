@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected CompilerOptions createOptions() {\n  CompilerOptions options = new CompilerOptions();\n  options.setCodingConvention(new ClosureCodingConvention());\n  CompilationLevel level = flags.compilation_level;\n  level.setOptionsForCompilationLevel(options);\n  if (flags.debug) {\n    level.setDebugOptionsForCompilationLevel(options);\n  }\n\n  WarningLevel wLevel = flags.warning_level;\n  wLevel.setOptionsForWarningLevel(options);\n  for (FormattingOption formattingOption : flags.formatting) {\n    formattingOption.applyToOptions(options);\n  }\n\n  // Apply closurePass setting based on process_closure_primitives flag\n  options.closurePass = flags.process_closure_primitives;\n\n  initOptionsFromFlags(options);\n  return options;\n}",
+    "bug_name": "Closure-101"
+  }
+]

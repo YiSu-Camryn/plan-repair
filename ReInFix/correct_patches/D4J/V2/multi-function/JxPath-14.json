@@ -1,0 +1,10 @@
+[
+  {
+    "patch_code": {
+      "1": "protected Object functionFloor(EvalContext context) {\n    assertArgCount(1);\n    double v = InfoSetUtil.doubleValue(getArg1().computeValue(context));\n    if (Double.isNaN(v) || Double.isInfinite(v)) {\n        return v;\n    }\n    return new Double(Math.floor(v));\n}",
+      "2": "protected Object functionCeiling(EvalContext context) {\n    assertArgCount(1);\n    double v = InfoSetUtil.doubleValue(getArg1().computeValue(context));\n    if (Double.isNaN(v) || Double.isInfinite(v)) {\n        return v;\n    }\n    return new Double(Math.ceil(v));\n}",
+      "3": "protected Object functionRound(EvalContext context) {\n    assertArgCount(1);\n    double v = InfoSetUtil.doubleValue(getArg1().computeValue(context));\n    if (Double.isNaN(v) || Double.isInfinite(v)) {\n        return v;\n    }\n    return new Double(Math.round(v));\n}"
+    },
+    "bug_name": "JxPath-14"
+  }
+]

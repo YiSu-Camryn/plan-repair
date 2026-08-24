@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "protected void setName(String name) {\n    if (name != null) {\n        this.name = name.replace('\\\\', '/'); // Normalize path separators\n    } else {\n        this.name = null;\n    }\n}",
+    "bug_name": "Compress-13"
+  }
+]

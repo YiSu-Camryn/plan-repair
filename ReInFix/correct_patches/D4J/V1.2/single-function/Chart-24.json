@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Paint getPaint(double value) {\n    // Clamp the value to be within the bounds\n    if (value < this.lowerBound) {\n        value = this.lowerBound;\n    } else if (value > this.upperBound) {\n        value = this.upperBound;\n    }\n    // Proceed with the calculation using clamped value\n    double v = Math.max(value, this.lowerBound);\n    v = Math.min(v, this.upperBound);\n    int g = (int) ((v - this.lowerBound) / (this.upperBound - this.lowerBound) * 255.0);\n    return new Color(g, g, g);\n}",
+    "bug_name": "Chart-24"
+  }
+]

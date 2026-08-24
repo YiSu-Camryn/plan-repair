@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public DocumentType(String name, String publicId, String systemId, String baseUri) {\n    super(baseUri);\n\n    // Allow empty name by checking if it's null before validation\n    if (name == null) {\n        throw new IllegalArgumentException(\"Name must not be null\");\n    }\n    attr(\"name\", name);\n    attr(\"publicId\", publicId);\n    attr(\"systemId\", systemId);\n}",
+    "bug_name": "Jsoup-40"
+  }
+]

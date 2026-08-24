@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "@Override\npublic boolean equals(Object o) {\n    if (this == o) {\n        return true;\n    }\n    if (o == null) {\n        return false;\n    }\n    if (o instanceof DelegatingMethod) {\n        DelegatingMethod other = (DelegatingMethod) o;\n        return method.equals(other.method);\n    }\n    if (o instanceof Method) {\n        return method.equals(o);\n    }\n    return false;\n}",
+      "2": "@Override\npublic int hashCode() {\n    return method.hashCode();\n}"
+    },
+    "bug_name": "Mockito-11"
+  }
+]

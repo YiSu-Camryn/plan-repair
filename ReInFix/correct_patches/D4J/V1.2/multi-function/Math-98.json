@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "public BigDecimal[] operate(BigDecimal[] v) throws IllegalArgumentException {\n    if (v.length != this.getColumnDimension()) {\n        throw new IllegalArgumentException(\"vector has wrong length\");\n    }\n    final int nRows = this.getRowDimension();\n    final int nCols = this.getColumnDimension();\n    final BigDecimal[] out = new BigDecimal[nRows]; // Fixed the bug to use nRows instead of v.length\n    for (int row = 0; row < nRows; row++) {\n        BigDecimal sum = ZERO;\n        for (int i = 0; i < nCols; i++) {\n            sum = sum.add(data[row][i].multiply(v[i]));\n        }\n        out[row] = sum;\n    }\n    return out;\n}",
+      "2": "public double[] operate(double[] v) throws IllegalArgumentException {\n    final int nRows = this.getRowDimension();\n    final int nCols = this.getColumnDimension();\n    if (v.length != nCols) {\n        throw new IllegalArgumentException(\"vector has wrong length\");\n    }\n    final double[] out = new double[nRows]; // Fixed the bug to use nRows instead of v.length\n    for (int row = 0; row < nRows; row++) {\n        final double[] dataRow = data[row];\n        double sum = 0;\n        for (int i = 0; i < nCols; i++) {\n            sum += dataRow[i] * v[i];\n        }\n        out[row] = sum;\n    }\n    return out;\n}"
+    },
+    "bug_name": "Math-98"
+  }
+]

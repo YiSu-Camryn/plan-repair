@@ -1,0 +1,9 @@
+[
+  {
+    "patch_code": {
+      "1": "public double getMaximumExplodePercent() {\n    double result = 0.0;\n    if (this.dataset != null && this.dataset.getKeys() != null) {\n        Iterator iterator = this.dataset.getKeys().iterator();\n        while (iterator.hasNext()) {\n            Comparable key = (Comparable) iterator.next();\n            Number explode = (Number) this.explodePercentages.get(key);\n            if (explode != null) {\n                result = Math.max(result, explode.doubleValue());\n            }\n        }\n    }\n    return result;\n}",
+      "2": "public PiePlotState initialise(Graphics2D g2, Rectangle2D plotArea,\n        PiePlot plot, Integer index, PlotRenderingInfo info) {\n\n    PiePlotState state = new PiePlotState(info);\n    state.setPassesRequired(2);\n\n    if (plot.getDataset() != null) {\n        state.setTotal(DatasetUtilities.calculatePieDatasetTotal(\n                plot.getDataset()));\n    } else {\n        state.setTotal(0.0); // or some default value\n    }\n\n    state.setLatestAngle(plot.getStartAngle());\n    return state;\n}"
+    },
+    "bug_name": "Chart-15"
+  }
+]

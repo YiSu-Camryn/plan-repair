@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public boolean isCachable() {\n    /* As per [databind#735], existence of value or key deserializer (only passed\n     * if annotated to use non-standard one) should also prevent caching.\n     */\n    return (_keyDeserializer == null) \n           && (_valueDeserializer == null)\n           && (_valueTypeDeserializer == null)\n           && (_ignorableProperties == null);\n}",
+    "bug_name": "JacksonDatabind-12"
+  }
+]

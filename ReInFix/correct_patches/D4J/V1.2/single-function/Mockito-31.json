@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private String formatMethodCall() {\n    Object[] arguments = invocation.getArguments();\n    StringBuilder methodCall = new StringBuilder(invocation.getMethod().getName() + \"(\");\n    for (int i = 0; i < arguments.length; i++) {\n        methodCall.append(arguments[i]);\n        if (i < arguments.length - 1) {\n            methodCall.append(\", \");\n        }\n    }\n    methodCall.append(\")\");\n    return methodCall.toString();\n}",
+    "bug_name": "Mockito-31"
+  }
+]

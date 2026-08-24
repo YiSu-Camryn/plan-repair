@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private static boolean isReduceableFunctionExpression(Node n) {\n  if (n == null || n.getType() != Token.FUNCTION) {\n    return false;\n  }\n  return NodeUtil.isFunctionExpression(n) && !NodeUtil.isGetOrSetKey(n.getParent());\n}",
+    "bug_name": "Closure-55"
+  }
+]

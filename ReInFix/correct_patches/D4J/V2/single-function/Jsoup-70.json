@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "static boolean preserveWhitespace(Node node) {\n    if (node != null && node instanceof Element) {\n        Element el = (Element) node;\n        if (el.tag.preserveWhitespace()) {\n            return true;\n        } else {\n            Element current = el.parent();\n            while (current != null) {\n                if (current.tag.preserveWhitespace()) {\n                    return true;\n                }\n                current = current.parent();\n            }\n        }\n    }\n    return false;\n}",
+    "bug_name": "Jsoup-70"
+  }
+]

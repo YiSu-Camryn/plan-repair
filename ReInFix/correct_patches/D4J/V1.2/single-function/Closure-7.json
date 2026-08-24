@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public JSType caseObjectType(ObjectType type) {\n  if (value.equals(\"function\")) {\n    JSType ctorType = getNativeType(U2U_CONSTRUCTOR_TYPE);\n    boolean isCtorTypeSubtype = ctorType.isSubtype(type);\n    if (resultEqualsValue) {\n      return isCtorTypeSubtype ? ctorType : null;\n    }\n  }\n  return matchesExpectation(\"object\") ? type : null;\n}",
+    "bug_name": "Closure-7"
+  }
+]

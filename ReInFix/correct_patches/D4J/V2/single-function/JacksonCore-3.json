@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public UTF8StreamJsonParser(IOContext ctxt, int features, InputStream in,\n        ObjectCodec codec, BytesToNameCanonicalizer sym,\n        byte[] inputBuffer, int start, int end,\n        boolean bufferRecyclable)\n{\n    super(ctxt, features);\n    _inputStream = in;\n    _objectCodec = codec;\n    _symbols = sym;\n    _inputBuffer = inputBuffer;\n    _inputPtr = start;\n    _inputEnd = end;\n    // Properly initialize byte offset and related fields\n    _currInputProcessed = -start; // Adjusting the byte offset\n    _tokenInputRow = 1; // Initial row\n    _tokenInputCol = start + 1; // Adjusting the column\n    _currInputRowStart = start; // Initialize row start offset\n    _bufferRecyclable = bufferRecyclable;\n}",
+    "bug_name": "JacksonCore-3"
+  }
+]

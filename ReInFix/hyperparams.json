@@ -1,0 +1,6 @@
+{
+  "pipeline_mode": "spec",
+  "spec_control": {
+    "max_attempts": 3
+  }
+}

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public DefaultPrettyPrinter createInstance() {\n    // Check if the current instance is a subclass and ensure it has the required constructor\n    if (this.getClass() != DefaultPrettyPrinter.class) {\n        try {\n            return this.getClass().getConstructor(DefaultPrettyPrinter.class).newInstance(this);\n        } catch (Exception e) {\n            throw new IllegalStateException(\"Subclass does not override constructor(DefaultPrettyPrinter)\");\n        }\n    }\n    return new DefaultPrettyPrinter(this); // For DefaultPrettyPrinter itself\n}",
+    "bug_name": "JacksonCore-23"
+  }
+]

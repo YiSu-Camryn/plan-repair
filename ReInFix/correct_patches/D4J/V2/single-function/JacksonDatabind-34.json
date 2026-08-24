@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void acceptJsonFormatVisitor(JsonFormatVisitorWrapper visitor, JavaType typeHint) throws JsonMappingException\n{\n    if (_isInt) {\n        visitIntFormat(visitor, typeHint, JsonParser.NumberType.BIG_INTEGER);\n    } else {\n        Class<?> h = handledType();\n        if (h == BigDecimal.class) {\n            visitFloatFormat(visitor, typeHint, JsonParser.NumberType.BIG_DECIMAL); // Corrected here\n        } else if (h == Double.class || h == Float.class) {\n            visitFloatFormat(visitor, typeHint, JsonParser.NumberType.DOUBLE); // For other floating-point types\n        } else {\n            // otherwise bit unclear what to call... but let's try:\n            /*JsonNumberFormatVisitor v2 =*/ visitor.expectNumberFormat(typeHint);\n        }\n    }\n}",
+    "bug_name": "JacksonDatabind-34"
+  }
+]

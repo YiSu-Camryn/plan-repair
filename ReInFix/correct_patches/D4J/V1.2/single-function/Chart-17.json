@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public Object clone() throws CloneNotSupportedException {\n    int itemCount = getItemCount();\n    Object clone;\n    try {\n        if (itemCount > 0) {\n            clone = createCopy(0, itemCount - 1); /* bug is here */\n        } else {\n            clone = createCopy(0, 0); // Handle empty case gracefully\n        }\n    } catch (IllegalArgumentException e) {\n        clone = super.clone();\n    }\n    return clone;\n}",
+    "bug_name": "Chart-17"
+  }
+]

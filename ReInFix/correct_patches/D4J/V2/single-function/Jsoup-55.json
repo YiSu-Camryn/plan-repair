@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "void read(Tokeniser t, CharacterReader r) {\n    char c = r.consume();\n    switch (c) {\n        case '>':\n            t.tagPending.selfClosing = true;\n            t.emitTagPending();\n            t.transition(Data);\n            break;\n        case eof:\n            t.eofError(this);\n            t.transition(Data);\n            break;\n        default:\n            // Check for valid attribute name characters\n            if (Character.isLetterOrDigit(c) || c == '-' || c == '_') {\n                r.unconsume();\n                t.transition(BeforeAttributeName);\n            } else {\n                t.error(this);\n                t.transition(BeforeAttributeName);\n            }\n    }\n}",
+    "bug_name": "Jsoup-55"
+  }
+]

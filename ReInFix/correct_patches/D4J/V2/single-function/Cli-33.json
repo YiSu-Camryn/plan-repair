@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void printWrapped(PrintWriter pw, int width, int nextLineTabStop, String text)\n{\n    StringBuffer sb = new StringBuffer(text.length());\n\n    String[] lines = text.split(\"\\n\");\n    for (int i = 0; i < lines.length; i++) {\n        renderWrappedText(sb, width, nextLineTabStop, lines[i]);\n        if (i < lines.length - 1) {\n            sb.append(System.lineSeparator()); // Add system-dependent line separator after each line except the last one\n        }\n    }\n\n    pw.println(sb.toString());\n}",
+    "bug_name": "Cli-33"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void serialize(Object value, JsonGenerator jgen, SerializerProvider provider) throws IOException {\n    String str;\n    if (value instanceof Date) {\n        provider.defaultSerializeDateKey((Date) value, jgen);\n        return;\n    } else if (value instanceof Class) {\n        str = ((Class<?>) value).getName();\n    } else {\n        str = value.toString();\n    }\n    jgen.writeFieldName(str);\n}",
+    "bug_name": "JacksonDatabind-9"
+  }
+]

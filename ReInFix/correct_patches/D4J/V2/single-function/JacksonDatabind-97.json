@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public final void serialize(JsonGenerator gen, SerializerProvider ctxt) throws IOException {\n    if (_value == null) {\n        ctxt.defaultSerializeNull(gen);\n    } else if (_value instanceof JsonSerializable) {\n        ((JsonSerializable) _value).serialize(gen, ctxt);\n    } else {\n        // Use custom serializer to preserve context\n        ctxt.defaultSerializeValue(_value, gen);\n    }\n}",
+    "bug_name": "JacksonDatabind-97"
+  }
+]

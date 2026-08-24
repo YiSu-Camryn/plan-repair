@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private boolean toStringEquals(Matcher m, Object arg) {\n    if (arg == null) {\n        return StringDescription.toString(m).equals(\"null\"); // compare with \"null\" string if arg is null\n    }\n    return StringDescription.toString(m).equals(arg.toString());\n}",
+    "bug_name": "Mockito-38"
+  }
+]

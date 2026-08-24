@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
 
-from autogpt.logs import logger
+logger = logging.getLogger(__name__)
 
 
 class SpecPipelineError(Exception):

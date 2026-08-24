@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "static String stripLeadingHyphens(String str) {\n    if (str == null) {\n        return null;\n    }\n    if (str.startsWith(\"--\")) { // bug is here \n        return str.substring(2, str.length());\n    } else if (str.startsWith(\"-\")) {\n        return str.substring(1, str.length());\n    }\n    return str;\n}",
+    "bug_name": "Cli-5"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public void println() throws IOException {\n    final String recordSeparator = format.getRecordSeparator();\n    out.append(recordSeparator == null ? \"\" : recordSeparator); // fixed\n    newRecord = true; // fixed\n}",
+    "bug_name": "Csv-5"
+  }
+]

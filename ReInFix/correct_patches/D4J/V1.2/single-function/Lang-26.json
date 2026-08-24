@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public String format(Date date) {\n    Calendar c = new GregorianCalendar(mTimeZone, mLocale); // Consider both time zone and locale\n    c.setTime(date);\n    return applyRules(c, new StringBuffer(mMaxLengthEstimate)).toString();\n}",
+    "bug_name": "Lang-26"
+  }
+]

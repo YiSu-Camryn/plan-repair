@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private static <E extends Element> Integer indexInList(Element search, List<E> elements) {\n    Validate.notNull(search);\n    Validate.notNull(elements);\n    \n    for (int i = 0; i < elements.size(); i++) {\n        E element = elements.get(i);\n        if (areElementsEqual(element, search)) // use custom comparator\n            return i;\n    }\n    return null;\n}\n\nprivate static boolean areElementsEqual(Element e1, Element e2) {\n    // Custom comparison logic based on desired properties\n    return e1.tag().equals(e2.tag()) && e1.text().equals(e2.text()) && e1.siblingIndex() == e2.siblingIndex();\n}",
+    "bug_name": "Jsoup-43"
+  }
+]

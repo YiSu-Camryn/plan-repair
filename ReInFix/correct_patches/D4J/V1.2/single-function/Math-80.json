@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private boolean flipIfWarranted(final int n, final int step) {\n    if (1.5 * work[pingPong] < work[4 * (n - 1) + pingPong]) {\n        // flip array\n        int j = 4 * (n - 1); // Updated calculation of j to ensure it's within bounds\n        for (int i = 0; i < j && j >= 0; i += 4) { // Added j >= 0 check\n            for (int k = 0; k < 4 && (i + k) < work.length && (j - k) >= 0; k += step) { // Added boundary checks\n                final double tmp = work[i + k];\n                work[i + k] = work[j - k];\n                work[j - k] = tmp;\n            }\n            j -= 4;\n        }\n        return true;\n    }\n    return false;\n}",
+    "bug_name": "Math-80"
+  }
+]

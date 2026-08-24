@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "boolean matchesLetter() {\n    if (isEmpty())\n        return false;\n    char c = input[pos];\n    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || Character.isLetter(c); // Check ASCII range first, then Unicode letters\n}",
+    "bug_name": "Jsoup-51"
+  }
+]

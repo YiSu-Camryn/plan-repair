@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private StringBuffer appendQuotedString(String pattern, ParsePosition pos,\n        StringBuffer appendTo, boolean escapingOn) {\n    int start = pos.getIndex();\n    char[] c = pattern.toCharArray();\n    if (escapingOn && c[start] == QUOTE) {\n        next(pos);  // Ensure ParsePosition is advanced to avoid infinite loop\n        return appendTo == null ? null : appendTo.append(QUOTE); \n    }\n    int lastHold = start;\n    while (pos.getIndex() < pattern.length()) {\n        if (escapingOn && pattern.substring(pos.getIndex()).startsWith(ESCAPED_QUOTE)) {\n            appendTo.append(c, lastHold, pos.getIndex() - lastHold).append(\n                    QUOTE);\n            pos.setIndex(pos.getIndex() + ESCAPED_QUOTE.length());\n            lastHold = pos.getIndex();\n            continue;\n        }\n        switch (c[pos.getIndex()]) {\n        case QUOTE:\n            next(pos);\n            return appendTo == null ? null : appendTo.append(c, lastHold,\n                    pos.getIndex() - lastHold);\n        default:\n            next(pos);\n        }\n    }\n    throw new IllegalArgumentException(\n            \"Unterminated quoted string at position \" + start);\n}",
+    "bug_name": "Lang-43"
+  }
+]

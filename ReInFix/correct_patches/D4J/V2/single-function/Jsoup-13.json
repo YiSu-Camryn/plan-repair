@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public boolean hasAttr(String attributeKey) {\n    Validate.notNull(attributeKey);\n    \n    attributeKey = handleAbsPrefix(attributeKey);\n    \n    return attributes.hasKey(attributeKey); /* bug is here */\n}\n\nprivate String handleAbsPrefix(String attributeKey) {\n    if (attributeKey.startsWith(\"abs:\")) {\n        String regularKey = attributeKey.substring(4);\n        String absUrl = absUrl(regularKey);\n        if (!absUrl.isEmpty()) {\n            return regularKey;\n        }\n    }\n    return attributeKey;\n}",
+    "bug_name": "Jsoup-13"
+  }
+]

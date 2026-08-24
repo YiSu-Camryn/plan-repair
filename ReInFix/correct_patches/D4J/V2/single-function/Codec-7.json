@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static String encodeBase64String(byte[] binaryData) {\n    return StringUtils.newStringUtf8(encodeBase64(binaryData, false)); // Disable chunking to avoid newlines\n}",
+    "bug_name": "Codec-7"
+  }
+]

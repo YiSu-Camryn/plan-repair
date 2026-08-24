@@ -1,0 +1,6 @@
+RWB v1
+['Cli-251', 'Cli-253', 'Cli-254', 'Cli-257', 'Codec-159', 'Codec-161', 'Codec-163', 'Codec-164', 'Codec-166', 'Collections-186', 'Compress-436', 'Compress-437', 'Compress-439', 'Compress-452', 'Compress-461', 'Compress-465', 'Compress-469', 'Compress-476', 'Csv-117', 'Csv-124', 'Jsoup-85', 'Jsoup-88', 'Jsoup-89', 'Jsoup-91', 'Jsoup-92', 'Jsoup-94', 'Jsoup-97', 'Jsoup-98', 'Jsoup-101', 'Jsoup-105', 'Jsoup-107', 'Jsoup-109', 'Jsoup-112', 'Jsoup-114', 'Jsoup-116', 'Jsoup-118', 'Jsoup-120', 'Jsoup-121', 'Lang-600', 'Lang-606', 'Lang-609', 'Lang-611', 'Lang-613', 'Lang-614']
+
+
+RWB v2
+['Cli-251', 'Cli-253', 'Cli-254', 'Cli-257', 'Codec-161', 'Codec-163', 'Codec-164', 'Codec-166', 'Compress-461', 'Compress-465', 'Compress-469', 'Compress-476', 'Jsoup-98', 'Jsoup-101', 'Jsoup-105', 'Jsoup-107', 'Jsoup-109', 'Jsoup-112', 'Jsoup-114', 'Jsoup-116', 'Jsoup-118', 'Jsoup-120', 'Jsoup-121', 'Lang-600', 'Lang-606', 'Lang-609', 'Lang-611', 'Lang-613', 'Lang-614']

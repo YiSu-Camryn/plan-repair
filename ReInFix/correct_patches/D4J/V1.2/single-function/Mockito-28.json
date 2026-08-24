@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "private void injectMockCandidate(Class<?> awaitingInjectionClazz, Set<Object> mocks, Object fieldInstance) {\n    for(Field field : orderedInstanceFieldsFrom(awaitingInjectionClazz)) {\n        Object injected = mockCandidateFilter.filterCandidate(mocks, field, fieldInstance).thenInject(); /* bug is here */\n        if (injected != null) {\n            mocks.remove(injected);\n            // Additional logging for successful injection\n            System.out.println(\"Successfully injected mock into field: \" + field.getName());\n        } else {\n            // Handle the case where injection fails\n            System.err.println(\"Failed to inject mock into field: \" + field.getName());\n        }\n    }\n}",
+    "bug_name": "Mockito-28"
+  }
+]

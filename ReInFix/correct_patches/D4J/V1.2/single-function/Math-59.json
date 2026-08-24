@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public static float max(final float a, final float b) {\n    return (Float.isNaN(a) || Float.isNaN(b)) ? Float.NaN : ((a <= b) ? b : a);\n}",
+    "bug_name": "Math-59"
+  }
+]

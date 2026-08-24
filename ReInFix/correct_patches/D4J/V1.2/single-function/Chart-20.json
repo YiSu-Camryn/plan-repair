@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public ValueMarker(double value, Paint paint, Stroke stroke, \n                   Paint outlinePaint, Stroke outlineStroke, float alpha) {\n    super(paint, stroke, outlinePaint, outlineStroke, alpha); // Corrected the super call\n    this.value = value;\n}",
+    "bug_name": "Chart-20"
+  }
+]

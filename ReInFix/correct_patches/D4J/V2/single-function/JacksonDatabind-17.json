@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public boolean useForType(JavaType t)\n{\n    switch (_appliesFor) {\n    case NON_CONCRETE_AND_ARRAYS:\n        while (t.isArrayType()) {\n            t = t.getContentType();\n        }\n        // fall through\n    case OBJECT_AND_NON_CONCRETE:\n        return (t.getRawClass() == Object.class) || isNonConcreteOrTreeNode(t);\n\n    case NON_FINAL:\n        while (t.isArrayType()) {\n            t = t.getContentType();\n        }\n        return isNonFinal(t);\n\n    default:\n        return isJavaLangObject(t);\n    }\n}\n\nprivate boolean isNonConcreteOrTreeNode(JavaType t) {\n    return !t.isConcrete() && !TreeNode.class.isAssignableFrom(t.getRawClass());\n}\n\nprivate boolean isNonFinal(JavaType t) {\n    return !t.isFinal() && !TreeNode.class.isAssignableFrom(t.getRawClass());\n}\n\nprivate boolean isJavaLangObject(JavaType t) {\n    return t.getRawClass() == Object.class;\n}",
+    "bug_name": "JacksonDatabind-17"
+  }
+]

@@ -1,0 +1,6 @@
+[
+  {
+    "patch_code": "public BaseSettings withDateFormat(DateFormat df) {\n    if (_dateFormat == df) {\n        return this;\n    }\n    if (df != null) {\n        if (df.getTimeZone() == null) {\n            df.setTimeZone(_timeZone);\n        } else if (!df.getTimeZone().equals(_timeZone)) {\n            df.setTimeZone(_timeZone);\n        }\n    }\n    TimeZone tz = (df == null) ? _timeZone : df.getTimeZone();\n    return new BaseSettings(_classIntrospector, _annotationIntrospector, _visibilityChecker, _propertyNamingStrategy, _typeFactory,\n            _typeResolverBuilder, df, _handlerInstantiator, _locale,\n            tz, _defaultBase64);\n}",
+    "bug_name": "JacksonDatabind-24"
+  }
+]
