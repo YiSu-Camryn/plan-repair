@@ -36,6 +36,26 @@ def _setup_repair_agent_cwd() -> None:
         sys.path.insert(0, root)
 
 
+def bootstrap_cluster_env() -> None:
+    """Match run_on_defects4j.sh: Defects4J PATH, Perl libs, locale."""
+    from repairagent import setup_defects4j_env
+
+    setup_defects4j_env()
+
+
+def ensure_defects4j_available() -> None:
+    import shutil
+
+    bootstrap_cluster_env()
+    if shutil.which("defects4j") is None:
+        d4j_bin = REPAIR_AGENT_ROOT / "defects4j" / "framework" / "bin" / "defects4j"
+        raise RuntimeError(
+            "defects4j not found in PATH after bootstrap. "
+            f"Expected under {d4j_bin}. "
+            "Run from repair_agent/ or use run_spec_attempts_ablation.sh."
+        )
+
+
 def patch_repairagent_experiment_dir(exp_dir: str) -> None:
     """Point RepairAgent spec logs and bug_results at a custom experiment folder."""
     spec_logs = os.path.join(exp_dir, "spec_logs")
@@ -172,6 +192,12 @@ def run_experiment(args: argparse.Namespace) -> int:
 
     _setup_repair_agent_cwd()
 
+    try:
+        ensure_defects4j_available()
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+
     from autogpt.bug_results_recorder import (
         BUG_RESULTS_FILENAME as RA_BUG_RESULTS,
         record_bug_result_spec_failed,
@@ -282,7 +308,12 @@ def run_experiment(args: argparse.Namespace) -> int:
     write_run_meta(output_dir, meta)
 
     print(f"\nDone. Results: {results_path}")
-    print(f"Summarize: py summarize_spec_pass_rates.py {output_dir}")
+    print(
+        "Summarize: {} summarize_spec_pass_rates.py {}".format(
+            sys.executable,
+            output_dir,
+        )
+    )
 
     if args.summarize and pending:
         sys.path.insert(0, str(ABLATION_DIR))
