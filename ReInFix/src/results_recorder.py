@@ -95,6 +95,8 @@ def record_spec_failed(
     token_stats: dict[str, Any],
     backend: str = "reinfix+spec",
     pipeline_mode: str = "spec",
+    repair_scenario: str | None = None,
+    dataset: str | None = None,
 ) -> None:
     ensure_repairagent_on_path()
     exp_dir = current_experiment_dir()
@@ -127,6 +129,10 @@ def record_spec_failed(
         **token_stats,
         "elapsed_seconds": round(elapsed_seconds, 2),
     }
+    if repair_scenario:
+        record["repair_scenario"] = repair_scenario
+    if dataset:
+        record["dataset"] = dataset
     append_bug_result(record)
     append_metrics(
         exp_dir,
@@ -162,6 +168,8 @@ def record_bug_run(
     injection_prompt_artifacts: Optional[dict[str, str]] = None,
     backend: str = "reinfix+spec",
     pipeline_mode: str = "spec",
+    repair_scenario: str | None = None,
+    dataset: str | None = None,
 ) -> None:
     ensure_repairagent_on_path()
     exp_dir = current_experiment_dir()
@@ -220,6 +228,10 @@ def record_bug_run(
         "elapsed_seconds": round(elapsed_seconds, 2),
         "artifacts": artifacts,
     }
+    if repair_scenario:
+        record["repair_scenario"] = repair_scenario
+    if dataset:
+        record["dataset"] = dataset
     append_bug_result(record)
     append_metrics(
         exp_dir,
