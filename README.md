@@ -15,7 +15,7 @@ On all 835 bugs of [Defects4J](https://github.com/rjust/defects4j) with GPT-6-Lu
 
 ## How It Works
 
-<img width="713" height="290" alt="image" src="https://github.com/user-attachments/assets/5c4cfd72-a551-4ac7-8959-b3052255e511" />
+![image](data/image.png)
 
 Given a repair task, BRIEF works in four stages: evidence collection, plan synthesis, plan assessment and refinement, and integration with an existing repair backend.
 
