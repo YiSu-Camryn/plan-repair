@@ -1,24 +1,23 @@
 <p align="center">
   <h1 align="center">BRIEF</h1>
   <p align="center">
-    <strong>No Intent, No Fix: Synthesizing Verified Behavioral
-Plans to Ground Automated Program Repair</strong>
+    <strong>An Evidence-Assessed Repair-Intent Interface for LLM-Based Program Repair</strong>
   </p>
 </p>
 
 
 ---
 
-BRIEF collects complementary evidence from NL documentation, failing tests, and surrounding code context, and synthesizes it into a structured behavioral repair plan stating intended behavior, fault locations, and repair requirements. An independent plan auditor screens the plan for unsupported claims and incomplete fault coverage, triggering revision when weaknesses are detected; the verified plan is then injected as persistent guidance into an LLM-based repair backend at each iteration, anchoring behavioral intent and reducing diagnostic drift.
+BRIEF is an evidence-guided repair harness that externalizes repair intent as an explicit, evidence-assessed interface between project evidence and patch generation. It collects NL documentation, failing tests, and code context, and synthesizes them into a structured Repair Plan that captures intended behavior, observed violations, repair requirements, target locations, and repair direction. A Plan Assessor checks the plan against its source evidence for grounding, target consistency, coverage, and concreteness, and rejected plans are refined before use. Only an accepted plan is supplied to the repair backend as structured context; the backend retains its native tools, patch generation, validation, and refinement loop, and falls back to its original procedure when no plan is accepted.
 
-On the [Defects4J](https://github.com/rjust/defects4j) benchmark, BRIEF correctly fixed **217 bugs**, outperforming prior state-of-the-art tools.
+On all 835 bugs of [Defects4J](https://github.com/rjust/defects4j) with GPT-6-Luna, BRIEF raises the number of correctly fixed bugs from 59 to **256** with RepairAgent and from 203 to **327** with ReinFix.
 
 
 ## How It Works
 
-![alt text](image.png)
+<img width="713" height="290" alt="image" src="https://github.com/user-attachments/assets/5c4cfd72-a551-4ac7-8959-b3052255e511" />
 
-Given a buggy method, BRIEF generates a patch through four stages: evidence collection, plan synthesis, plan auditing, and plan-grounded patch generation. 
+Given a repair task, BRIEF works in four stages: evidence collection, plan synthesis, plan assessment and refinement, and integration with an existing repair backend.
 
 ## Environment Setup
 
@@ -74,14 +73,14 @@ export OPENAI_API_KEY="sk-..."
 cd repair_agent
 export PATH=$PATH:$(pwd)/defects4j/framework/bin
 python3 checkout_py.py Math 98
-./run.sh --ai-settings ai_settings.yaml --model gpt-4o-mini -c -l 40
+./run.sh --ai-settings ai_settings.yaml --model gpt-6-luna -c -l 40
 ```
 
 ### 2.Run a Batch of Bugs
 
 ```bash
 cd repair_agent
-./run_on_defects4j.sh experimental_setups/test_e35_bugs_list hyperparams.json gpt-4o-mini
+./run_on_defects4j.sh experimental_setups/test_e35_bugs_list hyperparams.json gpt-6-luna
 ```
 
 The bug list file format is: `Project BugNumber` per line with blank lines between.
